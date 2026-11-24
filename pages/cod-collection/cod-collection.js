@@ -395,6 +395,7 @@ x('codTransferForm').addEventListener('submit',e=>{
   notice('COD transfer saved. Total Panel COD unchanged: '+money(before.effective));
 });
 
+const transferPanelNode=x('codTransferPanel');
 let selectedRiderId = null;
 let selectedRiderDate = null;
 
@@ -518,7 +519,7 @@ function render(){
 
     // Keep the transfer section inside the selected rider, directly
     // above Payment History. Reuse the same node to preserve form handlers.
-    card.append(x('codTransferPanel'));
+    card.append(transferPanelNode);
     const sub=el('h4','cod-subtitle','Payment History');
     card.append(sub,table(r.payments,id=>{
       if(!confirm('Remove this payment?'))return;
@@ -530,7 +531,7 @@ function render(){
     target.append(card);
   }
 
-  renderTransferUI(d);
+  if(r)renderTransferUI(d);
   const at=x('agentRows');
   at.replaceChildren();
   if(!d.agent.length){
