@@ -4,126 +4,71 @@
    CID EXTRACTOR & TRACKING SHEET AUTOMATION
 ========================================================= */
 
-
-/* TRACKING SHEET WEB APP URL */
-
 const TRACKING_UPLOAD_URL =
   'https://script.google.com/macros/s/AKfycbwI3t_4skwtWpGNm6WnMKQuB4fzCRjuSV9M_GBuzfPlMr88QWTz3Hz10zGGE6V8fMYW/exec';
 
 
-/* =========================================================
-   BANGLADESH CURRENT DATE
-========================================================= */
+/* BANGLADESH CURRENT DATE */
 
 function getBangladeshDate() {
 
   const parts = new Intl.DateTimeFormat('en-GB', {
-
     timeZone: 'Asia/Dhaka',
-
     year: 'numeric',
-
     month: '2-digit',
-
     day: '2-digit'
-
   }).formatToParts(new Date());
 
   const date = {};
 
   parts.forEach(p => {
-
     date[p.type] = p.value;
-
   });
 
   return `${date.year}-${date.month}-${date.day}`;
 
 }
 
-
-/* SET DEFAULT DATE */
-
-document.getElementById(
-  'trackingDate'
-).value = getBangladeshDate();
+document.getElementById('trackingDate').value =
+  getBangladeshDate();
 
 
-/* =========================================================
-   DATE TO SHEET TAB NAME
-
-   Example:
-   2026-11-24 = Nov 24
-========================================================= */
+/* DATE TO TRACKING SHEET TAB NAME */
 
 function trackingTabName(dateStr) {
 
   const months = [
-
     'Jan', 'Feb', 'Mar', 'Apr',
-
     'May', 'Jun', 'Jul', 'Aug',
-
     'Sep', 'Oct', 'Nov', 'Dec'
-
   ];
 
   const parts = dateStr.split('-');
 
-  const month = Number(parts[1]);
-
-  const day = Number(parts[2]);
-
-  return `${months[month - 1]} ${day}`;
+  return `${months[Number(parts[1]) - 1]} ${Number(parts[2])}`;
 
 }
 
 
-/* =========================================================
-   CID EXTRACTOR
-========================================================= */
+/* CID EXTRACTOR */
 
 function extractCIDs() {
 
-  const input = document
-    .getElementById('cidInput')
-    .value;
+  const input = document.getElementById('cidInput').value;
 
   const matches = input.match(
-
     /\b[FRCE](?=[A-Z0-9]{10}\b)(?=[A-Z0-9]*\d)[A-Z0-9]{10}\b/gi
-
   ) || [];
 
-
-  /* REMOVE DUPLICATES */
-
   const uniqueCIDs = [
-
-    ...new Set(
-
-      matches.map(cid => cid.toUpperCase())
-
-    )
-
+    ...new Set(matches.map(cid => cid.toUpperCase()))
   ];
 
+  document.getElementById('cidOutput').value =
+    uniqueCIDs.join('\n');
 
-  /* SHOW OUTPUT */
-
-  document.getElementById(
-    'cidOutput'
-  ).value = uniqueCIDs.join('\n');
-
-
-  /* SHOW COUNT */
-
-  document.getElementById(
-    'cidCount'
-  ).textContent =
-
+  document.getElementById('cidCount').textContent =
     `${uniqueCIDs.length}টি unique CID পাওয়া গেছে`;
-
 
   setTrackingMsg('');
 
@@ -132,95 +77,64 @@ function extractCIDs() {
 }
 
 
-/* =========================================================
-   EXTRACT BUTTON
-========================================================= */
+/* EXTRACT BUTTON */
 
-document.getElementById(
-  'extractCidBtn'
-).addEventListener(
-
-  'click',
-
-  extractCIDs
-
-);
+document.getElementById('extractCidBtn')
+  .addEventListener('click', extractCIDs);
 
 
-/* =========================================================
-   CLEAR BUTTON
-========================================================= */
+/* CLEAR BUTTON */
 
-document.getElementById(
-  'clearCidBtn'
-).addEventListener('click', () => {
+document.getElementById('clearCidBtn')
+  .addEventListener('click', () => {
 
-  document.getElementById(
-    'cidInput'
-  ).value = '';
+    document.getElementById('cidInput').value = '';
 
-  document.getElementById(
-    'cidOutput'
-  ).value = '';
+    document.getElementById('cidOutput').value = '';
 
-  document.getElementById(
-    'cidCount'
-  ).textContent =
+    document.getElementById('cidCount').textContent =
+      '0 unique CID পাওয়া গেছে';
 
-    '0 unique CID পাওয়া গেছে';
+    setTrackingMsg('');
 
-  setTrackingMsg('');
-
-});
+  });
 
 
-/* =========================================================
-   COPY CID BUTTON
-========================================================= */
+/* COPY CID BUTTON */
 
-document.getElementById(
-  'copyCidBtn'
-).addEventListener('click', function() {
+document.getElementById('copyCidBtn')
+  .addEventListener('click', function() {
 
-  const text = document
-    .getElementById('cidOutput')
-    .value;
+    const text = document.getElementById('cidOutput').value;
 
-  if (!text) {
+    if (!text) {
 
-    alert('First extract the CID list.');
+      alert('First extract the CID list.');
 
-    return;
+      return;
 
-  }
+    }
 
-  copyText(text, this);
+    copyText(text, this);
 
-});
+  });
 
 
-/* =========================================================
-   TRACKING UPLOAD MESSAGE
-========================================================= */
+/* TRACKING STATUS MESSAGE */
 
 function setTrackingMsg(text, type = '') {
 
-  const el = document.getElementById(
-    'trackingMsg'
-  );
+  const el = document.getElementById('trackingMsg');
 
   el.textContent = text;
 
   el.className = 'tracking-msg' +
-
     (type ? ' ' + type : '');
 
 }
 
 
-/* =========================================================
-   TRACKING SHEET UPLOAD
-========================================================= */
+/* TRACKING SHEET UPLOAD */
 
 let trackingUploading = false;
 
@@ -228,64 +142,39 @@ async function uploadToTracking(type) {
 
   if (trackingUploading) return;
 
-
-  /* VERIFY WEB APP URL */
-
   if (
-
     !TRACKING_UPLOAD_URL ||
-
     TRACKING_UPLOAD_URL.includes('PASTE_YOUR')
-
   ) {
 
     setTrackingMsg(
-
-      'Tracking Sheet Web App URL এখনো সেট করা হয়নি।',
-
+      'Tracking Sheet Web App URL is not configured.',
       'error'
-
     );
 
     return;
 
   }
-
-
-  /* EXTRACT LATEST INPUT AUTOMATICALLY */
 
   const cids = extractCIDs();
 
   if (!cids.length) {
 
     setTrackingMsg(
-
       'কোনো valid CID পাওয়া যায়নি।',
-
       'error'
-
     );
 
     return;
 
   }
 
-
-  /* SELECTED DATE */
-
-  const dateStr = document
-    .getElementById('trackingDate')
-    .value;
+  const dateStr =
+    document.getElementById('trackingDate').value;
 
   if (!dateStr) {
 
-    setTrackingMsg(
-
-      'আগে Date Select করুন।',
-
-      'error'
-
-    );
+    setTrackingMsg('আগে Date Select করুন।', 'error');
 
     return;
 
@@ -293,51 +182,32 @@ async function uploadToTracking(type) {
 
   const tabName = trackingTabName(dateStr);
 
-
-  /* TARGET COLUMN */
-
   const columnName =
-
     type === 'yesterday'
-
       ? 'Yesterday Hold'
-
       : 'Morning Received';
-
-
-  /* CONFIRM UPLOAD */
 
   const confirmed = confirm(
 
     `Date: ${dateStr}\n` +
-
     `Sheet: ${tabName}\n` +
-
     `Column: ${columnName}\n` +
-
     `Total CID: ${cids.length}\n\n` +
-
     'Upload to Tracking Sheet?'
 
   );
 
   if (!confirmed) return;
 
+  const yesterdayBtn =
+    document.getElementById('addYesterdayBtn');
 
-  /* BUTTON LOADING STATE */
-
-  const yesterdayBtn = document
-    .getElementById('addYesterdayBtn');
-
-  const morningBtn = document
-    .getElementById('addMorningBtn');
+  const morningBtn =
+    document.getElementById('addMorningBtn');
 
   const activeBtn =
-
     type === 'yesterday'
-
       ? yesterdayBtn
-
       : morningBtn;
 
   const oldText = activeBtn.textContent;
@@ -345,94 +215,53 @@ async function uploadToTracking(type) {
   trackingUploading = true;
 
   yesterdayBtn.disabled = true;
-
   morningBtn.disabled = true;
 
   activeBtn.textContent = 'Uploading...';
 
-
   setTrackingMsg(
-
     `${tabName} → ${columnName} এ CID Upload হচ্ছে...`,
-
     'info'
-
   );
-
-
-  /* SEND DATA TO GOOGLE APPS SCRIPT */
 
   try {
 
     const response = await fetch(
-
       TRACKING_UPLOAD_URL,
-
       {
-
         method: 'POST',
-
         headers: {
-
-          'Content-Type':
-            'text/plain;charset=utf-8'
-
+          'Content-Type': 'text/plain;charset=utf-8'
         },
-
         body: JSON.stringify({
-
           action: 'uploadTrackingCIDs',
-
           date: dateStr,
-
           type: type,
-
           cids: cids
-
         })
-
       }
-
     );
 
     if (!response.ok) {
 
-      throw new Error(
-
-        'HTTP Error: ' + response.status
-
-      );
+      throw new Error('HTTP Error: ' + response.status);
 
     }
 
     const data = await response.json();
 
-
-    /* SERVER ERROR */
-
     if (!data.ok) {
 
-      throw new Error(
-
-        data.error || 'Unknown upload error'
-
-      );
+      throw new Error(data.error || 'Unknown upload error');
 
     }
-
-
-    /* SUCCESS MESSAGE */
 
     setTrackingMsg(
 
       `✓ ${data.tabName} → ${data.columnName}` +
-
       ` | Added: ${data.added}` +
-
       ` | Duplicate Skipped: ${data.skipped}` +
-
       ` | Total: ${data.total}` +
-
       ` | Time: ${data.executionTime}s`,
 
       'success'
@@ -442,11 +271,8 @@ async function uploadToTracking(type) {
   } catch (err) {
 
     setTrackingMsg(
-
       'Upload Failed: ' + err.message,
-
       'error'
-
     );
 
   } finally {
@@ -454,7 +280,6 @@ async function uploadToTracking(type) {
     trackingUploading = false;
 
     yesterdayBtn.disabled = false;
-
     morningBtn.disabled = false;
 
     activeBtn.textContent = oldText;
@@ -464,27 +289,21 @@ async function uploadToTracking(type) {
 }
 
 
-/* =========================================================
-   YESTERDAY HOLD BUTTON
-========================================================= */
+/* YESTERDAY HOLD BUTTON */
 
-document.getElementById(
-  'addYesterdayBtn'
-).addEventListener('click', () => {
+document.getElementById('addYesterdayBtn')
+  .addEventListener('click', () => {
 
-  uploadToTracking('yesterday');
+    uploadToTracking('yesterday');
 
-});
+  });
 
 
-/* =========================================================
-   MORNING RECEIVED BUTTON
-========================================================= */
+/* MORNING RECEIVED BUTTON */
 
-document.getElementById(
-  'addMorningBtn'
-).addEventListener('click', () => {
+document.getElementById('addMorningBtn')
+  .addEventListener('click', () => {
 
-  uploadToTracking('morning');
+    uploadToTracking('morning');
 
-});
+  });
