@@ -15,7 +15,7 @@
 <style>
 
 /* =========================================================
-   AD JOY PANEL — GLOBAL LAYOUT
+   GLOBAL LAYOUT
 ========================================================= */
 
 :root {
@@ -81,7 +81,7 @@ html, body {
 
 
 /* =========================================================
-   DESKTOP TOP NAVIGATION
+   DESKTOP NAVIGATION
 ========================================================= */
 
 #appRoot .ops-topbar {
@@ -190,9 +190,6 @@ html, body {
   background: #ffe5e5;
 }
 
-
-/* MOBILE MENU HIDDEN ON DESKTOP */
-
 #appRoot .mobile-menu-toggle {
   display: none;
 }
@@ -203,7 +200,7 @@ html, body {
 
 
 /* =========================================================
-   DASHBOARD & IFRAME
+   DASHBOARD AND IFRAME
 ========================================================= */
 
 .ops-dashboard {
@@ -233,7 +230,7 @@ html, body {
 
 
 /* =========================================================
-   DESKTOP WORKSPACE — LEFT & RIGHT
+   DESKTOP WORKSPACE
 ========================================================= */
 
 .workspace {
@@ -305,13 +302,6 @@ html, body {
   opacity: .8;
 }
 
-.workspace-value {
-  font-size: 28px;
-  font-weight: 750;
-  margin: 10px 0 4px;
-  overflow-wrap: anywhere;
-}
-
 .workspace-account {
   font-size: 12px;
   color: #64748b;
@@ -320,7 +310,9 @@ html, body {
 }
 
 
-/* QUICK NOTES */
+/* =========================================================
+   QUICK NOTES
+========================================================= */
 
 .workspace textarea {
   display: block;
@@ -518,7 +510,7 @@ html, body {
 
 
 /* =========================================================
-   TO-DO PRIORITY SORTING
+   PRIORITY SORTING
 ========================================================= */
 
 .todo-sort-actions {
@@ -567,7 +559,7 @@ html, body {
 
 
 /* =========================================================
-   MOBILE & TABLET NAVIGATION
+   MOBILE AND TABLET NAVIGATION
 ========================================================= */
 
 @media (max-width: 1200px) {
@@ -669,27 +661,60 @@ html, body {
 
 
 /* =========================================================
-   TABLET DASHBOARD
+   MOBILE DASHBOARD CONTENT ORDER
+
+   1. Welcome
+   2. Daily To-Do
+   3. Quick Notes
+   4. Daily Quote
+   5. Footer
 ========================================================= */
 
 @media (max-width: 950px) {
 
   .workspace {
-    grid-template-columns: 1fr;
-    gap: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
     max-width: 750px;
   }
 
   .workspace-left,
   .workspace-right {
-    gap: 14px;
+    display: contents;
+  }
+
+  .workspace-welcome {
+    order: 1;
+  }
+
+  .todo-card {
+    order: 2;
+  }
+
+  .workspace-notes-card {
+    order: 3;
+  }
+
+  .workspace-quote {
+    order: 4;
+  }
+
+  .workspace footer {
+    order: 5;
+  }
+
+  .workspace-left > *,
+  .workspace-right > * {
+    width: 100%;
+    box-sizing: border-box;
   }
 
 }
 
 
 /* =========================================================
-   MOBILE DASHBOARD
+   SMALL MOBILE SCREENS
 ========================================================= */
 
 @media (max-width: 600px) {
@@ -766,7 +791,7 @@ html, body {
 
   .workspace textarea {
     min-height: 110px;
-    font-size: 14px;
+    font-size: 16px;
   }
 
   .todo-head h2 {
@@ -801,10 +826,7 @@ html, body {
     padding: 7px 10px;
   }
 
-  .todo-add input {
-    font-size: 16px;
-  }
-
+  .todo-add input,
   .todo-head input {
     font-size: 16px;
   }
@@ -926,9 +948,6 @@ html, body {
       ◈ AD JOY PANEL
     </span>
 
-
-    <!-- MOBILE MENU BUTTON -->
-
     <button
       type="button"
       id="mobileMenuToggle"
@@ -940,7 +959,7 @@ html, body {
     </button>
 
 
-    <!-- OPERATIONAL TOOLS -->
+    <!-- OPERATIONAL MENU -->
 
     <nav
       class="ops-menu"
@@ -1024,9 +1043,6 @@ html, body {
 
     </nav>
 
-
-    <!-- LOGOUT -->
-
     <button
       type="button"
       class="top-logout"
@@ -1060,9 +1076,7 @@ html, body {
     <div class="workspace">
 
 
-      <!-- ================================================
-           LEFT SIDE — WORKSPACE
-      ================================================ -->
+      <!-- LEFT SIDE -->
 
       <div class="workspace-left">
 
@@ -1093,29 +1107,9 @@ html, body {
         </header>
 
 
-        <!-- OPERATIONAL TOOLS COUNT -->
+        <!-- PERSONAL QUICK NOTES -->
 
-        <div class="workspace-card">
-
-          <div class="workspace-label">
-            Operational tools
-          </div>
-
-          <div
-            class="workspace-value"
-            id="workspaceToolCount"
-          ></div>
-
-          <div class="workspace-account">
-            Ready to use from the menu
-          </div>
-
-        </div>
-
-
-        <!-- QUICK NOTES -->
-
-        <div class="workspace-card">
+        <div class="workspace-card workspace-notes-card">
 
           <strong>Personal Quick Notes</strong>
 
@@ -1162,9 +1156,7 @@ html, body {
       </div>
 
 
-      <!-- ================================================
-           RIGHT SIDE — DAILY TO-DO
-      ================================================ -->
+      <!-- RIGHT SIDE -->
 
       <div class="workspace-right">
 
@@ -1233,7 +1225,7 @@ html, body {
           </div>
 
 
-          <!-- ADD NEW TASK -->
+          <!-- ADD TASK -->
 
           <form id="todoForm" class="todo-add">
 
@@ -1310,25 +1302,17 @@ html, body {
 <script>
 
 /* =========================================================
-   FIREBASE AUTH CONFIGURATION
+   FIREBASE CONFIGURATION
 ========================================================= */
 
 const firebaseConfig = {
-
   apiKey: "AIzaSyADm297kotJhrGe_TbM9dZCktoFDVBIIr4",
-
   authDomain: "adjoy-rider-tracker.firebaseapp.com",
-
   projectId: "adjoy-rider-tracker",
-
   storageBucket: "adjoy-rider-tracker.firebasestorage.app",
-
   messagingSenderId: "207253998908",
-
   appId: "1:207253998908:web:17f549b4a947b327f5e239",
-
   measurementId: "G-3CBEZGZVHM"
-
 };
 
 firebase.initializeApp(firebaseConfig);
@@ -1376,9 +1360,7 @@ const MobileMenu = (() => {
   }
 
   function close() {
-
     setOpen(false);
-
   }
 
   toggle.addEventListener('click', () => {
@@ -1394,9 +1376,7 @@ const MobileMenu = (() => {
   menu.addEventListener('click', e => {
 
     if (e.target.closest('button')) {
-
       close();
-
     }
 
   });
@@ -1404,9 +1384,7 @@ const MobileMenu = (() => {
   document.addEventListener('keydown', e => {
 
     if (e.key === 'Escape') {
-
       close();
-
     }
 
   });
@@ -1414,9 +1392,7 @@ const MobileMenu = (() => {
   window.addEventListener('resize', () => {
 
     if (window.innerWidth > 1200) {
-
       close();
-
     }
 
   });
@@ -1461,11 +1437,7 @@ const DAILY_TASKS = [
 let todoTimer;
 
 
-/* =========================================================
-   BANGLADESH WORKDAY
-
-   Resets at 06:00 AM Bangladesh Time
-========================================================= */
+/* BANGLADESH WORKDAY — RESET AT 06:00 AM */
 
 function todoWorkDate(now = new Date()) {
 
@@ -1475,7 +1447,7 @@ function todoWorkDate(now = new Date()) {
 
 
 /* =========================================================
-   INITIALIZE DAILY TO-DO
+   DAILY TO-DO CONTROLLER
 ========================================================= */
 
 function initTodo(user) {
@@ -1515,7 +1487,7 @@ function initTodo(user) {
   const sortCancel = el('todoSortCancel');
 
 
-  /* SAVED DAILY PRIORITY ORDER */
+  /* SAVED PRIORITY ORDER */
 
   function dailyOrder() {
 
@@ -1575,8 +1547,6 @@ function initTodo(user) {
   }
 
 
-  /* START SORTING */
-
   sortBtn.onclick = () => {
 
     if (date.value !== activeDay) return;
@@ -1590,8 +1560,6 @@ function initTodo(user) {
   };
 
 
-  /* CANCEL SORTING */
-
   sortCancel.onclick = () => {
 
     tasks = snapshot;
@@ -1602,8 +1570,6 @@ function initTodo(user) {
 
   };
 
-
-  /* SAVE PRIORITY ORDER */
 
   sortSave.onclick = () => {
 
@@ -1624,7 +1590,6 @@ function initTodo(user) {
     } catch (e) {
 
       el('todoSortHint').textContent =
-
         'Unable to save order. Please enable local storage.';
 
       return;
@@ -1638,7 +1603,7 @@ function initTodo(user) {
   };
 
 
-  /* USER-SPECIFIC DAILY STORAGE */
+  /* USER-SPECIFIC STORAGE */
 
   const key = () =>
 
@@ -1658,9 +1623,7 @@ function initTodo(user) {
       .replace(/attandance/g, 'attendance');
 
 
-  /* =======================================================
-     RENDER TASK LIST
-  ======================================================= */
+  /* RENDER TASK LIST */
 
   function render() {
 
@@ -1692,9 +1655,7 @@ function initTodo(user) {
       const row = document.createElement('div');
 
       row.className = 'todo-row' +
-
         (task.done ? ' done' : '');
-
 
       const label = document.createElement('label');
 
@@ -1723,8 +1684,6 @@ function initTodo(user) {
       row.append(label);
 
 
-      /* DAILY TASK */
-
       if (task.daily) {
 
         const tag = document.createElement('small');
@@ -1735,8 +1694,6 @@ function initTodo(user) {
 
         row.append(tag);
 
-
-        /* SORTING MODE */
 
         if (sorting) {
 
@@ -1797,9 +1754,6 @@ function initTodo(user) {
 
       } else {
 
-
-        /* CUSTOM TASK DELETE */
-
         const del = document.createElement('button');
 
         del.type = 'button';
@@ -1829,8 +1783,6 @@ function initTodo(user) {
     });
 
 
-    /* STATUS MESSAGE */
-
     el('todoStatus').textContent =
 
       !storageOK
@@ -1852,9 +1804,7 @@ function initTodo(user) {
   }
 
 
-  /* =======================================================
-     LOAD TASKS
-  ======================================================= */
+  /* LOAD TASKS */
 
   function load() {
 
@@ -1976,7 +1926,7 @@ function initTodo(user) {
 
   date.onchange = () => {
 
-    if (date.value > activeDay) {
+    if (!date.value || date.value > activeDay) {
 
       date.value = activeDay;
 
@@ -2070,9 +2020,7 @@ function stopWorkspace() {
   stopTodo();
 
   const notes = document.getElementById(
-
     'workspaceNotes'
-
   );
 
   notes.oninput = null;
@@ -2091,19 +2039,6 @@ function initWorkspace(user) {
   const el = id => document.getElementById(id);
 
 
-  /* OPERATIONAL TOOLS COUNT */
-
-  el('workspaceToolCount').textContent = String(
-
-    document.querySelectorAll(
-
-      '.ops-menu .dash-tool'
-
-    ).length
-
-  ).padStart(2, '0');
-
-
   /* PERSONAL QUICK NOTES */
 
   const notes = el('workspaceNotes');
@@ -2115,16 +2050,15 @@ function initWorkspace(user) {
     notes.value = localStorage.getItem(key) || '';
 
     el('workspaceNoteStatus').textContent =
-
       'Saved locally in this browser.';
 
   } catch (e) {
 
     el('workspaceNoteStatus').textContent =
-
       'Local storage unavailable.';
 
   }
+
 
   notes.oninput = () => {
 
@@ -2133,13 +2067,11 @@ function initWorkspace(user) {
       localStorage.setItem(key, notes.value);
 
       el('workspaceNoteStatus').textContent =
-
         'All changes saved locally.';
 
     } catch (e) {
 
       el('workspaceNoteStatus').textContent =
-
         'Unable to save notes.';
 
     }
@@ -2168,7 +2100,7 @@ function initWorkspace(user) {
   ];
 
 
-  /* BANGLADESH CLOCK & GREETING */
+  /* BANGLADESH CLOCK AND GREETING */
 
   function tick() {
 
@@ -2252,6 +2184,8 @@ function initWorkspace(user) {
    FIREBASE AUTH CONTROLLER
 ========================================================= */
 
+let panelController = null;
+
 const Auth = (() => {
 
 
@@ -2269,9 +2203,7 @@ const Auth = (() => {
   function hideError() {
 
     document.getElementById(
-
       'authError'
-
     ).style.display = 'none';
 
   }
@@ -2282,15 +2214,11 @@ const Auth = (() => {
   async function submit() {
 
     const email = document.getElementById(
-
       'authEmail'
-
     ).value.trim();
 
     const password = document.getElementById(
-
       'authPassword'
-
     ).value;
 
     hideError();
@@ -2298,17 +2226,13 @@ const Auth = (() => {
     if (!email || !password) {
 
       return showError(
-
         'Enter both email and password.'
-
       );
 
     }
 
     const btn = document.getElementById(
-
       'authSubmitBtn'
-
     );
 
     if (btn.disabled) return;
@@ -2320,11 +2244,8 @@ const Auth = (() => {
     try {
 
       await fbAuth.signInWithEmailAndPassword(
-
         email,
-
         password
-
       );
 
     } catch (e) {
@@ -2349,35 +2270,27 @@ const Auth = (() => {
     const map = {
 
       'auth/invalid-email':
-
         'That email address looks invalid.',
 
       'auth/user-not-found':
-
         'No account found with that email.',
 
       'auth/wrong-password':
-
         'Incorrect password.',
 
       'auth/invalid-credential':
-
         'Incorrect email or password.',
 
       'auth/email-already-in-use':
-
         'An account already exists with that email.',
 
       'auth/weak-password':
-
         'Password must be at least 6 characters.',
 
       'auth/too-many-requests':
-
         'Too many attempts. Please wait and try again.',
 
       'auth/network-request-failed':
-
         'Network error. Check your internet connection.'
 
     };
@@ -2394,9 +2307,7 @@ const Auth = (() => {
   async function logout() {
 
     if (!confirm('Log out of the Operations Panel?')) {
-
       return;
-
     }
 
     MobileMenu.close();
@@ -2419,30 +2330,22 @@ const Auth = (() => {
   fbAuth.onAuthStateChanged(user => {
 
     document.getElementById(
-
       'bootLoading'
-
     ).classList.add('hidden');
 
 
     if (user) {
 
       document.getElementById(
-
         'authScreen'
-
       ).classList.add('hidden');
 
       document.getElementById(
-
         'appRoot'
-
       ).classList.remove('hidden');
 
       document.getElementById(
-
         'authPassword'
-
       ).value = '';
 
       initWorkspace(user);
@@ -2456,15 +2359,11 @@ const Auth = (() => {
       stopWorkspace();
 
       document.getElementById(
-
         'appRoot'
-
       ).classList.add('hidden');
 
       document.getElementById(
-
         'authScreen'
-
       ).classList.remove('hidden');
 
       if (panelController) {
@@ -2491,9 +2390,6 @@ const Auth = (() => {
 /* =========================================================
    HISTORY-AWARE PANEL NAVIGATION
 ========================================================= */
-
-let panelController = null;
-
 
 function initPanel() {
 
@@ -2524,7 +2420,7 @@ function initPanel() {
   );
 
 
-  /* GET CURRENT ROUTE */
+  /* CURRENT ROUTE */
 
   function currentRoute() {
 
@@ -2544,6 +2440,7 @@ function initPanel() {
   /* IFRAME NAVIGATION */
 
   let displayedPage = null;
+
 
   function setFramePage(page) {
 
@@ -2617,6 +2514,7 @@ function initPanel() {
 
     });
 
+
     try {
 
       localStorage.setItem(
@@ -2680,7 +2578,7 @@ function initPanel() {
   });
 
 
-  /* HOME BUTTON */
+  /* DASHBOARD BUTTON */
 
   homeBtn.addEventListener('click', () => {
 
@@ -2689,7 +2587,7 @@ function initPanel() {
   });
 
 
-  /* BROWSER BACK / FORWARD */
+  /* BROWSER BACK AND FORWARD */
 
   window.addEventListener('popstate', () => {
 
@@ -2721,9 +2619,7 @@ function initPanel() {
       try {
 
         viewer.contentWindow.location.replace(
-
           'about:blank'
-
         );
 
       } catch (e) {
