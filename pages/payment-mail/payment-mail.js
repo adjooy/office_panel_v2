@@ -50,20 +50,19 @@ function formatMoney(value){
   return n.toLocaleString('en-US', { maximumFractionDigits:0 });
 }
 
-// payment message er date (dd/mm/yy) -> Date object. Na pele aajker date.
+// Parse the stated payment date; never silently invent a date.
 function parsePaymentDate(str){
-
-  if(str){
-    const p = str.split('/');
-    if(p.length === 3){
-      let year = parseInt(p[2], 10);
-      if(year < 100) year += 2000;
-      const d = new Date(year, parseInt(p[1],10) - 1, parseInt(p[0],10));
-      if(!Number.isNaN(d.getTime())) return d;
-    }
-  }
-
-  return new Date();
+  if (!str) return null;
+  const match = String(str).match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+  if (!match) return null;
+  const day=Number(match[1]), month=Number(match[2]);
+  let year=Number(match[3]);
+  if (year < 100) year += 2000;
+  const date=new Date(year,month-1,day);
+  if (date.getFullYear()!==year ||
+      date.getMonth()!==month-1 ||
+      date.getDate()!==day) return null;
+  return date;
 }
 
 // 01 September 2026
@@ -117,7 +116,17 @@ function generatePaymentMail(){
     return;
   }
 
-  const payDate = parsePaymentDate(data.date);
+  let payDate = parsePaymentDate(data.date);
+  if (!payDate) {
+    if (data.date) {
+      alert('Invalid payment date in message. Please check the original transaction before generating the mail.');
+      return;
+    }
+    if (!confirm('No payment date was found. Use today\'s date (device time) for this payment mail?')) {
+      return;
+    }
+    payDate = new Date();
+  }
 
   const collectionDate = new Date(payDate);
   collectionDate.setDate(collectionDate.getDate() - COLLECTION_DAY_OFFSET);
