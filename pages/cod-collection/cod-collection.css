@@ -152,3 +152,30 @@ body.cod-locked #codTransferForm,body.cod-locked #codTransferHistory{pointer-eve
  .cod-edit-dialog{padding:17px;border-radius:14px}
  .cod-dialog-actions button{flex:1}
 }
+
+/* Work-date header, rider COD comparison, and footer tools */
+.cod-page-header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.cod-date-box{display:flex;flex-direction:column;gap:6px;min-width:185px;background:#fff;border:1px solid #e1e8f3;border-radius:13px;padding:11px 14px;box-shadow:0 4px 14px rgba(27,52,90,.04)}
+.cod-date-box label{font-size:12px;font-weight:800;color:#52647f}
+.cod-date-box input{min-height:40px;border:1px solid #d9e3f1;border-radius:9px;background:#f8faff;color:#172442;font-size:16px;padding:8px 11px;width:100%}
+.cod-quick-actions{display:flex;gap:9px;flex-wrap:wrap;padding:11px 13px}
+.cod-quick-actions .btn{min-height:41px}
+.cod-data-tools{margin-top:18px;margin-bottom:24px}
+.cod-bottom-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.cod-bottom-actions .btn,.cod-bottom-actions .cod-import{min-height:45px;display:flex;align-items:center;justify-content:center;text-align:center;cursor:pointer}
+.cod-rider-metric.cod-metric-original{border-color:#dae3f4;background:#f5f8ff}
+.cod-rider-metric.cod-metric-adjusted{border-color:#b7c9ff;background:#edf2ff}
+.cod-rider-metric.cod-metric-adjusted span,.cod-rider-metric.cod-metric-adjusted strong{color:#3653ad}
+@media(max-width:600px){
+ .cod-page-header{align-items:stretch;gap:12px}
+ .cod-date-box{width:100%;min-width:0;padding:10px 12px}
+ .cod-date-box input{font-size:16px}
+ .cod-quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));padding:10px;gap:8px}
+ .cod-quick-actions .btn{min-width:0;font-size:12px;padding:10px 7px}
+ .cod-bottom-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .cod-bottom-actions .cod-import{grid-column:1/-1}
+ .cod-rider-metric.cod-metric-original,.cod-rider-metric.cod-metric-adjusted{grid-column:auto}
+}
+@media(max-width:380px){
+ .cod-rider-metric.cod-metric-original strong,.cod-rider-metric.cod-metric-adjusted strong{font-size:14px}
+}
