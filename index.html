@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -5,523 +6,2746 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Operations Panel</title>
 
-
-<style>
-/* Dashboard refresh */
-.sidebar{display:none!important}
-.app:not(.hidden){display:block!important;position:relative!important}
-.main{margin-left:0!important;width:100%!important;max-width:none!important;display:flex!important;flex-direction:column!important;height:100%!important}
-.ops-dashboard{flex:1;min-height:0}
-.viewer-frame{flex:1;min-height:0;width:100%;border:0}
-.ops-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px clamp(16px,3vw,40px);background:#fff;border-bottom:1px solid #e5eaf4;flex-shrink:0}
-.ops-topbar-brand{font-size:17px;font-weight:800;color:#1b2b4c}
-.ops-topbar-actions{display:flex;gap:9px}
-.ops-topbar button{border:1px solid #dce3f2;border-radius:10px;background:#f5f7fd;color:#2b3c65;padding:9px 13px;font:600 13px system-ui;cursor:pointer}
-.ops-topbar button:hover{background:#e9edfc}
-.ops-topbar .top-logout{background:#fff4f4;color:#a63345}
-@media(max-width:500px){.ops-topbar-brand{font-size:14px}.ops-topbar button{padding:8px 10px;font-size:12px}}
-
-:root{--dash-bg:#f4f7fc;--dash-ink:#15233d;--dash-muted:#6d7b94;--dash-accent:#4f67ed}
-.main{position:relative;min-width:0;background:var(--dash-bg)!important}
-.ops-dashboard{height:100%;overflow:auto;padding:clamp(18px,3vw,42px);box-sizing:border-box;background:linear-gradient(135deg,#f5f8ff,#edf3fb)}
-.ops-dashboard[hidden],.viewer-frame[hidden]{display:none!important}
-.dash-top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:24px}
-.dash-eyebrow{font-size:12px;font-weight:800;letter-spacing:2px;color:#566ce5;text-transform:uppercase}
-.dash-top h1{margin:7px 0 8px;color:#172442;font-size:clamp(27px,3vw,38px);line-height:1.15}
-.dash-top p{color:#6d7b94;margin:0;font-size:14px}
-.dash-date{background:white;border:1px solid #e4eaf5;border-radius:13px;padding:11px 16px;color:#4b5b77;font-weight:650;font-size:13px}
-.dash-hero{background:linear-gradient(115deg,#1e3264,#354fb5 65%,#5c6ee4);border-radius:22px;padding:clamp(22px,3vw,36px);color:white;display:flex;align-items:center;justify-content:space-between;gap:20px;box-shadow:0 15px 32px #354fa52b}
-.dash-hero h2{font-size:clamp(22px,2.5vw,31px);line-height:1.2;margin:0 0 10px}
-.dash-hero p{color:#dbe4ff;font-size:14px;line-height:1.6;max-width:510px;margin:0}
-.dash-hero-icon{font-size:70px;opacity:.8}
-.dash-section-head{display:flex;align-items:center;justify-content:space-between;margin:30px 0 15px}
-.dash-section-head h2{font-size:18px;color:var(--dash-ink);margin:0}
-.dash-section-head span{font-size:12px;color:var(--dash-muted)}
-.dash-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.dash-tool{border:1px solid #e3eaf5;background:white;border-radius:18px;padding:22px;text-align:left;cursor:pointer;min-height:167px;display:flex;flex-direction:column;align-items:flex-start;gap:12px;box-shadow:0 5px 18px #1d33570b;transition:transform .16s,box-shadow .16s,border-color .16s;font-family:inherit}
-.dash-tool:hover,.dash-tool:focus-visible{transform:translateY(-3px);box-shadow:0 12px 30px #1d33571f;border-color:#b9c6ff;outline:none}
-.dash-tool .tool-icon{width:46px;height:46px;border-radius:13px;background:var(--tint,#eef2ff);color:var(--tone,#5266dd);display:grid;place-items:center;font-size:24px;font-weight:800}
-.dash-tool strong{font-size:16px;color:#172442}
-.dash-tool small{font-size:12px;color:#74819a;line-height:1.5}
-.dash-tool .tool-open{margin-top:auto;color:#5367d7;font-size:12px;font-weight:750}
-.dash-foot{margin-top:28px;color:#8b97ab;font-size:12px;text-align:center}
-.dash-home-btn{margin:14px 14px 8px;width:calc(100% - 28px);border:1px solid #aab9ff55;background:#5369e51a;color:inherit;border-radius:11px;padding:12px;cursor:pointer;text-align:left;font:inherit;font-weight:700}
-.dash-home-btn.active{background:#5369e5;color:white}
-.dash-home-btn:hover{border-color:#7587ff}
-@media(max-width:1050px){.dash-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:620px){.dash-grid{grid-template-columns:1fr}.dash-hero-icon{display:none}.dash-tool{min-height:140px;padding:18px}.dash-date{width:100%;box-sizing:border-box}.ops-dashboard{padding:16px}.dash-section-head{margin-top:22px}}
-</style>
 <link rel="stylesheet" href="assets/css/base.css">
 <link rel="stylesheet" href="assets/css/shell.css">
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
 <style>
-/* Compact, viewport-aware dashboard */
-html,body{margin:0}
-#appRoot.app{width:100%!important}
-#appRoot .main{overflow:hidden}
-.ops-dashboard{padding:clamp(10px,1.5vh,20px) clamp(14px,2vw,30px)!important;overflow:auto}
-.dash-top{margin-bottom:clamp(8px,1.4vh,14px);gap:8px}
-.dash-top h1{font-size:clamp(20px,2.4vw,29px);margin:3px 0}
-.dash-top p{font-size:12px}
-.dash-date{padding:7px 10px;font-size:11px}
-.dash-hero{padding:clamp(12px,2vh,22px);border-radius:15px}
-.dash-hero h2{font-size:clamp(18px,2vw,24px);margin-bottom:4px}
-.dash-hero p{font-size:12px}
-.dash-hero-icon{font-size:42px}
-.dash-section-head{margin:clamp(10px,1.8vh,18px) 0 10px}
-.dash-section-head h2{font-size:16px}
-.dash-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,1vw,13px)}
-.dash-tool{padding:clamp(12px,1.5vw,18px);min-height:clamp(125px,20vh,175px);gap:7px;border-radius:13px}
-.dash-tool .tool-icon{width:36px;height:36px;font-size:20px}
-.dash-tool strong{font-size:clamp(12px,1.15vw,15px)}
-.dash-tool small{font-size:11px}
-.dash-foot{margin-top:12px}
-.ops-topbar{padding:8px clamp(14px,2vw,30px)}
-@media(min-width:850px) and (min-height:590px){
- .ops-dashboard{display:flex;flex-direction:column}
- .dash-grid{flex:1;grid-template-rows:repeat(2,minmax(0,1fr))}
- .dash-tool{min-height:0}
+
+/* =========================================================
+   AD JOY PANEL — GLOBAL LAYOUT
+========================================================= */
+
+:root {
+  --dash-bg: #f4f7fc;
+  --dash-ink: #15233d;
+  --dash-muted: #6d7b94;
+  --dash-accent: #4f67ed;
 }
-@media(max-width:849px){.dash-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:520px){
- .dash-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
- .dash-tool{min-height:112px;padding:11px;gap:5px}
- .dash-tool .tool-icon{width:30px;height:30px;font-size:17px}
- .dash-tool small{display:none}
- .dash-tool strong{font-size:12px}
- .dash-hero-icon{display:none}
- .dash-top p{display:none}
- .dash-date{width:auto}
- .dash-foot{display:none}
+
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
-@media(max-height:650px) and (min-width:850px){
- .dash-hero{padding:10px 16px}
- .dash-tool{min-height:100px;padding:10px}
- .dash-tool small{display:none}
- .dash-top p{display:none}
- .dash-foot{display:none}
+
+.sidebar {
+  display: none !important;
 }
+
+#appRoot.app {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+#appRoot.app:not(.hidden) {
+  display: block !important;
+}
+
+#appRoot.hidden {
+  display: none !important;
+}
+
+#authScreen,
+#bootLoading {
+  top: 0 !important;
+  height: 100dvh !important;
+}
+
+#appRoot .main {
+  position: relative;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  min-width: 0;
+  min-height: 0;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  gap: 0 !important;
+  overflow: hidden;
+  background: var(--dash-bg) !important;
+}
+
+
+/* =========================================================
+   DESKTOP TOP NAVIGATION
+========================================================= */
+
+#appRoot .ops-topbar {
+  display: grid;
+  grid-template-columns:
+    minmax(max-content, 1fr)
+    minmax(0, max-content)
+    minmax(max-content, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: #fff;
+  border-bottom: 1px solid #e5eaf4;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+  min-width: 0;
+}
+
+.ops-topbar-brand {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1b2b4c;
+  white-space: nowrap;
+}
+
+.ops-topbar button {
+  border: 1px solid #dce3f2;
+  border-radius: 8px;
+  background: #f5f7fd;
+  color: #2b3c65;
+  padding: 8px 10px;
+  font: 600 12px system-ui;
+  cursor: pointer;
+}
+
+.ops-topbar button:hover {
+  background: #e9edfc;
+}
+
+#appRoot .ops-topbar .ops-menu {
+  display: flex;
+  align-items: center;
+  justify-content: safe center;
+  justify-self: center;
+  gap: 5px;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.ops-menu .dash-tool {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  min-height: 0;
+  padding: 7px 9px;
+  border-radius: 8px;
+  box-shadow: none;
+  white-space: nowrap;
+  background: #f5f7fd;
+}
+
+.ops-menu .tool-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--tint, #eef2ff);
+  color: var(--tone, #5266dd);
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.ops-menu .dash-tool strong {
+  font-size: 12px;
+  font-weight: 650;
+  color: #2b3c65;
+}
+
+.ops-menu .dash-tool.active,
+.ops-topbar #topHomeBtn.active {
+  background: #4f67ed;
+  border-color: #4f67ed;
+  color: white;
+}
+
+.ops-menu .dash-tool.active strong {
+  color: white;
+}
+
+.ops-topbar .top-logout {
+  justify-self: end;
+  white-space: nowrap;
+  background: #fff4f4;
+  color: #a63345;
+}
+
+.ops-topbar .top-logout:hover {
+  background: #ffe5e5;
+}
+
+
+/* MOBILE MENU HIDDEN ON DESKTOP */
+
+#appRoot .mobile-menu-toggle {
+  display: none;
+}
+
+.mobile-menu-overlay {
+  display: none;
+}
+
+
+/* =========================================================
+   DASHBOARD & IFRAME
+========================================================= */
+
+.ops-dashboard {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: clamp(14px, 2vw, 28px);
+  box-sizing: border-box;
+  background: linear-gradient(135deg, #f5f8ff, #edf3fb);
+}
+
+.viewer-frame {
+  display: block;
+  flex: 1;
+  width: 100%;
+  height: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.viewer-frame[hidden],
+.ops-dashboard[hidden] {
+  display: none !important;
+}
+
+
+/* =========================================================
+   DESKTOP WORKSPACE — LEFT & RIGHT
+========================================================= */
+
+.workspace {
+  max-width: 1500px;
+  width: 100%;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(360px, 460px);
+  gap: 20px;
+  align-items: start;
+  box-sizing: border-box;
+  color: #172442;
+}
+
+.workspace-left,
+.workspace-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.workspace-card {
+  background: #fff;
+  border: 1px solid #e3e9f4;
+  border-radius: 16px;
+  padding: 20px;
+  min-width: 0;
+  box-sizing: border-box;
+  box-shadow: 0 4px 15px #17244206;
+}
+
+.workspace-welcome {
+  background: linear-gradient(115deg, #1e3264, #4f67ed);
+  color: white;
+  padding: 28px;
+}
+
+.workspace-welcome h1 {
+  margin: 8px 0;
+  font-size: clamp(24px, 3vw, 36px);
+}
+
+.workspace-welcome p {
+  margin: 0;
+  color: #e1e8ff;
+  line-height: 1.6;
+}
+
+.workspace-clock {
+  font-size: clamp(32px, 5vw, 54px);
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  margin-top: 22px;
+}
+
+#dashDate {
+  margin-top: 5px;
+  color: #e1e8ff;
+  font-size: 14px;
+}
+
+.workspace-label {
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: .8;
+}
+
+.workspace-value {
+  font-size: 28px;
+  font-weight: 750;
+  margin: 10px 0 4px;
+  overflow-wrap: anywhere;
+}
+
+.workspace-account {
+  font-size: 12px;
+  color: #64748b;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+
+
+/* QUICK NOTES */
+
+.workspace textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 150px;
+  resize: vertical;
+  padding: 12px;
+  border: 1px solid #dce3f2;
+  border-radius: 10px;
+  font: inherit;
+  margin: 12px 0 6px;
+  background: #f8faff;
+  color: #172442;
+}
+
+.workspace textarea:focus {
+  outline: none;
+  border-color: #93b4f8;
+  box-shadow: 0 0 0 3px #eff6ff;
+}
+
+.workspace-quote {
+  text-align: center;
+  background: #e8edfc;
+  color: #35477d;
+  padding: 18px;
+  border-radius: 14px;
+  font-style: italic;
+  font-size: 13px;
+}
+
+.workspace footer {
+  text-align: center;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.7;
+  padding: 8px;
+}
+
+
+/* =========================================================
+   DAILY TO-DO LIST
+========================================================= */
+
+.todo-card {
+  width: 100%;
+}
+
+.todo-head,
+.todo-add,
+.todo-row,
+.todo-progress-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.todo-head {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.todo-head h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+
+.todo-head input,
+.todo-add input {
+  border: 1px solid #dce3f2;
+  border-radius: 9px;
+  padding: 10px;
+  font: inherit;
+  font-size: 13px;
+  color: #172442;
+  background: #fff;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.todo-head input {
+  max-width: 100%;
+}
+
+.todo-add {
+  margin: 14px 0;
+}
+
+.todo-add input {
+  flex: 1;
+  width: 0;
+}
+
+.todo-card button {
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 12px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  background: #4f67ed;
+  color: white;
+}
+
+.todo-add button {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.todo-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.todo-stats div {
+  background: #f4f7fc;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.todo-stats b {
+  display: block;
+  font-size: 23px;
+  margin-top: 5px;
+}
+
+.todo-progress {
+  height: 8px;
+  background: #e8edf5;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.todo-progress div {
+  height: 100%;
+  background: #15965e;
+  transition: width .2s;
+}
+
+.todo-progress-label {
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.todo-row {
+  padding: 10px 0;
+  border-bottom: 1px solid #edf0f5;
+  min-height: 26px;
+  font-size: 13px;
+}
+
+.todo-row label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.todo-row input {
+  accent-color: #15965e;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.todo-row.done span {
+  text-decoration: line-through;
+  color: #8491a5;
+}
+
+.todo-row button {
+  background: #fff0f0;
+  color: #b42335;
+  font-size: 12px;
+}
+
+.todo-row .daily-tag {
+  font-size: 10px;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.todo-card .workspace-account {
+  margin-top: 10px;
+}
+
+
+/* =========================================================
+   TO-DO PRIORITY SORTING
+========================================================= */
+
+.todo-sort-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+
+.todo-sort-actions [hidden] {
+  display: none !important;
+}
+
+.todo-sort-actions small {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.todo-sort-actions #todoSortSave {
+  background: #15803d;
+}
+
+.todo-sort-actions #todoSortCancel,
+.todo-row .sort-arrow {
+  background: #eef2ff;
+  color: #3346a0;
+}
+
+.todo-row .sort-arrow {
+  padding: 7px 10px;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.todo-card button:disabled {
+  opacity: .35;
+  cursor: default;
+}
+
+.todo-row .sort-rank {
+  font-size: 12px;
+  color: #64748b;
+  min-width: 16px;
+}
+
+
+/* =========================================================
+   MOBILE & TABLET NAVIGATION
+========================================================= */
+
+@media (max-width: 1200px) {
+
+  #appRoot .ops-topbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 10px;
+    padding: 10px 14px;
+    z-index: 200;
+  }
+
+  #appRoot .mobile-menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    background: #4f67ed;
+    color: white;
+    border: 0;
+    border-radius: 9px;
+    min-height: 42px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  #appRoot .mobile-menu-toggle:hover {
+    background: #4056d3;
+  }
+
+  #appRoot .ops-topbar .ops-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    width: 100%;
+    padding: 16px;
+    box-sizing: border-box;
+    background: #fff;
+    border-bottom: 1px solid #e5eaf4;
+    box-shadow: 0 12px 30px #17244225;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    max-height: 75vh;
+    max-height: 75dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 300;
+  }
+
+  #appRoot .ops-topbar .ops-menu.mobile-open {
+    display: grid;
+  }
+
+  #appRoot .ops-menu button {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    min-height: 58px;
+    padding: 12px;
+    gap: 9px;
+    white-space: normal;
+    text-align: left;
+    border-radius: 11px;
+    font-size: 13px;
+    box-sizing: border-box;
+  }
+
+  #appRoot .ops-menu .tool-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 19px;
+    border-radius: 8px;
+  }
+
+  #appRoot .ops-menu .dash-tool strong {
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+
+  #appRoot .ops-topbar .top-logout {
+    min-height: 42px;
+    padding: 9px 12px;
+  }
+
+  .mobile-menu-overlay.active {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: #17244255;
+    z-index: 150;
+  }
+
+}
+
+
+/* =========================================================
+   TABLET DASHBOARD
+========================================================= */
+
+@media (max-width: 950px) {
+
+  .workspace {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    max-width: 750px;
+  }
+
+  .workspace-left,
+  .workspace-right {
+    gap: 14px;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE DASHBOARD
+========================================================= */
+
+@media (max-width: 600px) {
+
+  #appRoot .ops-topbar {
+    padding: 8px 10px;
+    gap: 7px;
+  }
+
+  .ops-topbar-brand {
+    font-size: 13px;
+  }
+
+  #appRoot .mobile-menu-toggle {
+    padding: 10px 13px;
+    font-size: 12px;
+  }
+
+  #appRoot .ops-topbar .top-logout {
+    font-size: 11px;
+    padding: 9px;
+  }
+
+  #appRoot .ops-topbar .ops-menu {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  #appRoot .ops-menu button {
+    min-height: 60px;
+    padding: 9px;
+    gap: 7px;
+  }
+
+  #appRoot .ops-menu .dash-tool strong {
+    font-size: 12px;
+  }
+
+  #appRoot .ops-menu .tool-icon {
+    width: 29px;
+    height: 29px;
+    font-size: 17px;
+  }
+
+  .ops-dashboard {
+    padding: 12px;
+  }
+
+  .workspace {
+    gap: 12px;
+  }
+
+  .workspace-card {
+    padding: 16px;
+    border-radius: 13px;
+  }
+
+  .workspace-welcome {
+    padding: 22px;
+  }
+
+  .workspace-welcome h1 {
+    font-size: 26px;
+  }
+
+  .workspace-welcome p {
+    font-size: 13px;
+  }
+
+  .workspace-clock {
+    font-size: 38px;
+    margin-top: 16px;
+  }
+
+  .workspace textarea {
+    min-height: 110px;
+    font-size: 14px;
+  }
+
+  .todo-head h2 {
+    font-size: 18px;
+  }
+
+  .todo-stats {
+    gap: 6px;
+  }
+
+  .todo-stats div {
+    padding: 10px;
+    font-size: 11px;
+  }
+
+  .todo-stats b {
+    font-size: 22px;
+  }
+
+  .todo-row {
+    min-height: 36px;
+    font-size: 13px;
+  }
+
+  .todo-row input {
+    width: 21px;
+    height: 21px;
+  }
+
+  .todo-row .sort-arrow {
+    min-height: 36px;
+    padding: 7px 10px;
+  }
+
+  .todo-add input {
+    font-size: 16px;
+  }
+
+  .todo-head input {
+    font-size: 16px;
+  }
+
+}
+
+@media (max-width: 360px) {
+
+  .ops-topbar-brand {
+    font-size: 11px;
+  }
+
+  #appRoot .mobile-menu-toggle {
+    padding: 9px;
+  }
+
+  #appRoot .ops-topbar {
+    gap: 5px;
+    padding: 7px;
+  }
+
+}
+
 </style>
-<style>
-html,body{margin:0!important;padding:0!important;width:100%;height:100%;overflow:hidden}
-#appRoot.app{position:fixed!important;inset:0!important;width:100%!important;height:100dvh!important;margin:0!important;padding:0!important;border:0!important}
-#authScreen,#bootLoading{top:0!important;height:100dvh!important}
-#appRoot .main{margin:0!important;padding:0!important;border:0!important;min-height:0;gap:0!important}
-.ops-topbar{margin:0!important;border:0!important;padding:8px 14px;min-height:0}
-.ops-menu{display:flex;align-items:center;gap:5px;padding:5px 10px;background:#fff;border-bottom:1px solid #e5eaf4;overflow-x:auto;flex:0 0 auto;scrollbar-width:thin}
-.ops-menu .dash-tool{flex:0 0 auto;display:flex;flex-direction:row;align-items:center;gap:6px;min-height:0!important;padding:8px 10px;border-radius:7px;box-shadow:none;white-space:nowrap;background:#f5f7fd}
-.ops-menu .dash-tool .tool-icon{width:23px;height:23px;font-size:15px;border-radius:5px}
-.ops-menu .dash-tool strong{font-size:12px}
-.ops-menu .dash-tool:hover,.ops-menu .dash-tool:focus-visible{transform:none;background:#e9edfc}
-.ops-menu .dash-tool.active,.ops-topbar #topHomeBtn.active{background:#4f67ed;border-color:#4f67ed;color:white}
-.ops-menu .dash-tool.active strong{color:white}
-.ops-dashboard{height:auto!important;flex:1;min-height:0}
-.viewer-frame{display:block;flex:1;width:100%;height:0;min-height:0;margin:0;padding:0;border:0}
-.viewer-frame[hidden],.ops-dashboard[hidden]{display:none!important}
-</style>
-<style>
-.workspace{max-width:1000px;width:100%;margin:0 auto;display:grid;gap:16px;box-sizing:border-box;color:#172442}
-.workspace-card{background:#fff;border:1px solid #e3e9f4;border-radius:16px;padding:22px;min-width:0}
-.workspace-welcome{background:linear-gradient(115deg,#1e3264,#4f67ed);color:white;padding:28px}
-.workspace-welcome h1{margin:8px 0;font-size:clamp(24px,4vw,36px)}
-.workspace-welcome p{margin:0;color:#e1e8ff}
-.workspace-clock{font-size:clamp(32px,6vw,56px);font-weight:750;font-variant-numeric:tabular-nums;margin-top:22px}
-.workspace-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.workspace-label{font-size:12px;letter-spacing:1px;text-transform:uppercase;opacity:.8}
-.workspace-value{font-size:24px;font-weight:750;margin:10px 0 4px;overflow-wrap:anywhere}
-.workspace-account{font-size:13px;color:#64748b;overflow-wrap:anywhere}
-.workspace textarea{display:block;width:100%;box-sizing:border-box;min-height:110px;resize:vertical;padding:12px;border:1px solid #dce3f2;border-radius:10px;font:inherit;margin:12px 0 6px;background:#f8faff;color:#172442}
-.workspace-quote{text-align:center;background:#e8edfc;color:#35477d;padding:18px;border-radius:14px;font-style:italic}
-.workspace footer{text-align:center;color:#64748b;font-size:12px;line-height:1.7;padding:8px}
-@media(max-width:560px){.workspace-grid{grid-template-columns:1fr}.workspace-card{padding:16px}}
-</style>
-<style>
-/* Single-row top navigation */
-#appRoot .ops-topbar{display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:6px 10px;border-bottom:1px solid #e5eaf4!important;min-width:0;flex-shrink:0}
-.ops-topbar-brand{white-space:nowrap;flex:0 0 auto;font-size:14px}
-#appRoot .ops-topbar .ops-menu{flex:1 1 auto;min-width:0;overflow-x:auto;padding:0;border:0;gap:4px;scrollbar-width:thin}
-.ops-topbar .ops-menu button{flex:0 0 auto;white-space:nowrap;padding:6px 8px;font-size:12px;border-radius:7px}
-.ops-topbar .ops-menu .dash-tool{gap:4px}
-.ops-topbar .ops-menu .dash-tool .tool-icon{width:19px;height:19px;font-size:13px}
-.ops-topbar .top-logout{flex:0 0 auto;white-space:nowrap;padding:7px 10px}
-.ops-topbar .ops-menu button.active:hover{background:#4f67ed;color:white}
-@media(max-width:600px){#appRoot .ops-topbar{gap:6px;padding:5px 6px}.ops-topbar-brand{font-size:11px}.ops-topbar .top-logout{font-size:11px;padding:6px}}
-</style>
-<style>
-.todo-head,.todo-add,.todo-row,.todo-progress-label{display:flex;align-items:center;gap:10px}.todo-head{justify-content:space-between;flex-wrap:wrap}.todo-head h2{margin:0;font-size:20px}.todo-head input,.todo-add input{border:1px solid #dce3f2;border-radius:9px;padding:10px;font:inherit;color:#172442;background:#fff}.todo-add{margin:14px 0}.todo-add input{flex:1;min-width:0}.todo-card button{border:0;border-radius:8px;padding:9px 12px;cursor:pointer;font:inherit;background:#4f67ed;color:white}.todo-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}.todo-stats div{background:#f4f7fc;padding:12px;border-radius:10px;font-size:12px}.todo-stats b{display:block;font-size:23px;margin-top:5px}.todo-progress{height:8px;background:#e8edf5;border-radius:10px;overflow:hidden;margin:8px 0}.todo-progress div{height:100%;background:#15965e;transition:width .2s}.todo-progress-label{justify-content:space-between;font-size:13px}.todo-row{padding:10px 0;border-bottom:1px solid #edf0f5}.todo-row label{flex:1;display:flex;align-items:center;gap:9px;overflow-wrap:anywhere;min-width:0}.todo-row input{accent-color:#15965e;width:18px;height:18px;flex-shrink:0}.todo-row.done span{text-decoration:line-through;color:#8491a5}.todo-row button{background:#fff0f0;color:#b42335;font-size:12px}.todo-card .workspace-account{margin-top:10px}
-</style>
-<style>
-#appRoot .ops-topbar{display:grid;grid-template-columns:minmax(max-content,1fr) minmax(0,max-content) minmax(max-content,1fr);align-items:center}
-#appRoot .ops-topbar .ops-menu{justify-self:center;width:100%;justify-content:safe center}
-#appRoot .ops-topbar .top-logout{justify-self:end}
-.todo-row .daily-tag{font-size:11px;color:#64748b;flex-shrink:0}
-</style>
-<style>
-.todo-sort-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0}.todo-sort-actions [hidden]{display:none!important}.todo-sort-actions small{color:#64748b}.todo-sort-actions #todoSortSave{background:#15803d}.todo-sort-actions #todoSortCancel,.todo-row .sort-arrow{background:#eef2ff;color:#3346a0}.todo-row .sort-arrow{padding:5px 10px;font-size:16px}.todo-row button:disabled{opacity:.35;cursor:default}.todo-row .sort-rank{font-size:12px;color:#64748b;min-width:20px}
-</style></head>
+</head>
+
 <body>
 
 
-
-<!-- ================= BOOT / AUTH GATE ================= -->
+<!-- ======================================================
+     BOOT / AUTH GATE
+====================================================== -->
 
 <div id="bootLoading" class="boot-loading">
   <div class="boot-spinner"></div>
 </div>
 
 <div id="authScreen" class="auth-screen hidden">
+
   <div class="auth-card">
+
     <div class="auth-badge">O</div>
+
     <h2 id="authTitle">Welcome back</h2>
-    <p class="auth-sub" id="authSub">Sign in to access the Operations Panel.</p>
 
-    <div id="authError" class="auth-error" style="display:none;"></div>
+    <p class="auth-sub" id="authSub">
+      Sign in to access the Operations Panel.
+    </p>
 
+    <div
+      id="authError"
+      class="auth-error"
+      style="display:none;"
+    ></div>
 
     <div class="auth-field">
+
       <label for="authEmail">Email</label>
-      <input id="authEmail" type="email" placeholder="you@example.com" autocomplete="username">
+
+      <input
+        id="authEmail"
+        type="email"
+        placeholder="you@example.com"
+        autocomplete="username"
+      >
+
     </div>
 
     <div class="auth-row2" id="authRow2">
+
       <div class="auth-field">
+
         <label for="authPassword">Password</label>
-        <input id="authPassword" type="password" placeholder="At least 6 characters" autocomplete="current-password" onkeydown="if(event.key==='Enter')Auth.submit()">
+
+        <input
+          id="authPassword"
+          type="password"
+          placeholder="At least 6 characters"
+          autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')Auth.submit()"
+        >
+
       </div>
+
     </div>
 
-    <button class="auth-submit" id="authSubmitBtn" onclick="Auth.submit()">Sign In</button>
+    <button
+      class="auth-submit"
+      id="authSubmitBtn"
+      onclick="Auth.submit()"
+    >
+      Sign In
+    </button>
 
-    
+    <div class="auth-lock-note">
+      🔒 Authorized users only.
+      Sign in to access the panel.
+    </div>
 
-    <div class="auth-lock-note">🔒 Authorized users only. Sign in to access the panel.</div>
   </div>
+
 </div>
+
+
+<!-- ======================================================
+     MAIN APPLICATION
+====================================================== -->
 
 <div class="app hidden" id="appRoot">
 
-<!-- ================= SIDEBAR ================= -->
-
-<aside class="sidebar">
-
-  <div class="brand">
-    <div class="brand-logo">O</div>
-
-    <div class="brand-text-wrap">
-      <div class="brand-text">Operations</div>
-      <div class="brand-sub">Management Panel</div>
-    </div>
-  </div>
-
-  <button class="sidebar-toggle" id="sidebarToggle" title="Collapse sidebar" type="button">◂</button>
-
-  <button type="button" id="dashHomeNav" class="dash-home-btn active">⌂ &nbsp; Dashboard Home</button>
-  <nav class="menu">
-
-    <button class="menu-btn active" data-src="pages/parcel-panel/parcel-panel.html">
-      <span class="menu-icon">▦</span>
-      <span class="menu-label">Parcel Panel</span>
-    </button>
-
-    <button class="menu-btn" data-src="pages/payment-mail/payment-mail.html">
-      <span class="menu-icon">৳</span>
-      <span class="menu-label">Payment Mail</span>
-    </button>
-
-    <button class="menu-btn" data-src="pages/Pickup-Mail/index.html">
-      <span class="menu-icon">P</span>
-      <span class="menu-label">Pickup Mail</span>
-    </button>
-    
-    <button class="menu-btn" data-src="pages/return-mail/return-mail.html">
-      <span class="menu-icon">↩</span>
-      <span class="menu-label">Return Mail</span>
-    </button>
-
-    <button class="menu-btn" data-src="pages/cid-extractor/cid-extractor.html">
-      <span class="menu-icon">⌕</span>
-      <span class="menu-label">CID Extractor</span>
-    </button>
-
-    <button class="menu-btn" data-src="pages/rider-km-tracker/rider-km-tracker.html">
-      <span class="menu-icon">🏍</span>
-      <span class="menu-label">Rider KM Tracker</span>
-    </button>
-
-    <button class="menu-btn" data-src="pages/return-hold-verification/return-hold-verification.html">
-      <span class="menu-icon">📋</span>
-      <span class="menu-label">Return &amp; Hold Verification</span>
-    </button>
-
-  </nav>
-
-  <div class="sidebar-bottom">
-    <div class="sidebar-account" id="accountEmailLabel"></div>
-    <button class="sidebar-logout" id="logoutBtn" type="button" onclick="Auth.logout()">Log Out</button>
-  </div>
-
-</aside>
-
-
-<!-- ================= MAIN (VIEWER) ================= -->
-
 <main class="main">
-  <header class="ops-topbar"><span class="ops-topbar-brand">◈ AD JOY PANEL</span><nav class="ops-menu" aria-label="Operational tools"><button type="button" id="topHomeBtn">⌂ Dashboard</button>
-  <button class="dash-tool" data-open="pages/parcel-panel/parcel-panel.html" style="--tint:#eaf0ff;--tone:#4e65e4"><span class="tool-icon">▦</span><strong>Parcel Panel</strong></button>
-  <button class="dash-tool" data-open="pages/payment-mail/payment-mail.html" style="--tint:#e7f8ee;--tone:#189b66"><span class="tool-icon">৳</span><strong>Payment Mail</strong></button>
-  <button class="dash-tool" data-open="pages/Pickup-Mail/index.html" style="--tint:#fff1e4;--tone:#df8738"><span class="tool-icon">P</span><strong>Pickup Mail</strong></button>
-  <button class="dash-tool" data-open="pages/return-mail/return-mail.html" style="--tint:#ffe9ee;--tone:#d85876"><span class="tool-icon">↩</span><strong>Return Mail</strong></button>
-  <button class="dash-tool" data-open="pages/cid-extractor/cid-extractor.html" style="--tint:#e8f8fc;--tone:#168da6"><span class="tool-icon">⌕</span><strong>CID Extractor</strong></button>
-  <button class="dash-tool" data-open="pages/rider-km-tracker/rider-km-tracker.html" style="--tint:#f2edff;--tone:#8557c9"><span class="tool-icon">🏍</span><strong>Rider KM Tracker</strong></button>
-  <button class="dash-tool" data-open="pages/return-hold-verification/return-hold-verification.html" style="--tint:#fff5dd;--tone:#bc8a1e"><span class="tool-icon">☑</span><strong>Backlogs Analysis</strong></button>
- </nav><button type="button" class="top-logout" onclick="Auth.logout()">Log Out</button></header>
-  
-  
 
-<section id="dashHome" class="ops-dashboard" aria-label="Dashboard home">
- <div class="workspace">
-  <header class="workspace-card workspace-welcome">
-   <div class="workspace-label">Your personal workspace</div>
-   <h1 id="workspaceGreeting">Welcome back!</h1>
-   <p>Welcome to your Operations Management Panel.</p>
-   <div class="workspace-clock" id="workspaceClock"></div>
-   <div id="dashDate"></div>
+
+  <!-- TOP NAVIGATION -->
+
+  <header class="ops-topbar">
+
+    <span class="ops-topbar-brand">
+      ◈ AD JOY PANEL
+    </span>
+
+
+    <!-- MOBILE MENU BUTTON -->
+
+    <button
+      type="button"
+      id="mobileMenuToggle"
+      class="mobile-menu-toggle"
+      aria-expanded="false"
+      aria-controls="operationalMenu"
+    >
+      ☰ Menu
+    </button>
+
+
+    <!-- OPERATIONAL TOOLS -->
+
+    <nav
+      class="ops-menu"
+      id="operationalMenu"
+      aria-label="Operational tools"
+    >
+
+      <button type="button" id="topHomeBtn">
+        ⌂ Dashboard
+      </button>
+
+      <button
+        type="button"
+        class="dash-tool"
+        data-open="pages/parcel-panel/parcel-panel.html"
+        style="--tint:#eaf0ff;--tone:#4e65e4"
+      >
+        <span class="tool-icon">▦</span>
+        <strong>Parcel Panel</strong>
+      </button>
+
+      <button
+        type="button"
+        class="dash-tool"
+        data-open="pages/payment-mail/payment-mail.html"
+        style="--tint:#e7f8ee;--tone:#189b66"
+      >
+        <span class="tool-icon">৳</span>
+        <strong>Payment Mail</strong>
+      </button>
+
+      <button
+        type="button"
+        class="dash-tool"
+        data-open="pages/Pickup-Mail/index.html"
+        style="--tint:#fff1e4;--tone:#df8738"
+      >
+        <span class="tool-icon">P</span>
+        <strong>Pickup Mail</strong>
+      </button>
+
+      <button
+        type="button"
+        class="dash-tool"
+        data-open="pages/return-mail/return-mail.html"
+        style="--tint:#ffe9ee;--tone:#d85876"
+      >
+        <span class="tool-icon">↩</span>
+        <strong>Return Mail</strong>
+      </button>
+
+      <button
+        type="button"
+        class="dash-tool"
+        data-open="pages/cid-extractor/cid-extractor.html"
+        style="--tint:#e8f8fc;--tone:#168da6"
+      >
+        <span class="tool-icon">⌕</span>
+        <strong>CID Extractor</strong>
+      </button>
+
+      <button
+        type="button"
+        class="dash-tool"
+        data-open="pages/rider-km-tracker/rider-km-tracker.html"
+        style="--tint:#f2edff;--tone:#8557c9"
+      >
+        <span class="tool-icon">🏍</span>
+        <strong>Rider KM Tracker</strong>
+      </button>
+
+      <button
+        type="button"
+        class="dash-tool"
+        data-open="pages/return-hold-verification/return-hold-verification.html"
+        style="--tint:#fff5dd;--tone:#bc8a1e"
+      >
+        <span class="tool-icon">☑</span>
+        <strong>Backlogs Analysis</strong>
+      </button>
+
+    </nav>
+
+
+    <!-- LOGOUT -->
+
+    <button
+      type="button"
+      class="top-logout"
+      onclick="Auth.logout()"
+    >
+      Log Out
+    </button>
+
   </header>
-  <div class="workspace-grid">
-   <div class="workspace-card"><div class="workspace-label">Operational tools</div><div class="workspace-value" id="workspaceToolCount"></div><div class="workspace-account">Ready to use from the top menu</div></div>
-   <div class="workspace-card"><div class="workspace-label">Account status</div><div class="workspace-value" style="color:#15803d">Authenticated</div><div class="workspace-account" id="workspaceAccount"></div></div>
-  </div>
-<section class="workspace-card todo-card" aria-label="Daily to-do list">
-<div class="todo-head"><div><h2>Daily To-Do List</h2><div class="workspace-account">Daily reset at 6:00 AM · Bangladesh time</div></div><input type="date" id="todoDate" aria-label="Task date"></div>
-<div class="todo-stats"><div>Total Tasks<b id="todoTotal">0</b></div><div>Completed<b id="todoDone" style="color:#15803d">0</b></div><div>Pending<b id="todoPending" style="color:#b45309">0</b></div></div>
-<div class="todo-progress-label"><span>Daily progress</span><strong id="todoPercent">0%</strong></div><div class="todo-progress"><div id="todoBar" style="width:0%"></div></div>
-<form id="todoForm" class="todo-add"><input id="todoInput" placeholder="Enter a new task..." maxlength="500" required aria-label="New task"><button type="submit">+ Add Task</button></form>
-<div class="todo-sort-actions"><button type="button" id="todoSort">↕ Sort Tasks</button><button type="button" id="todoSortSave" hidden>Save Sort</button><button type="button" id="todoSortCancel" hidden>Cancel</button><small id="todoSortHint"></small></div><div id="todoList"></div><div class="workspace-account" id="todoStatus" aria-live="polite"></div>
-</section>
-  <div class="workspace-card"><strong>Personal Quick Notes</strong><textarea id="workspaceNotes" placeholder="Write your important notes here..." aria-label="Personal quick notes"></textarea><div class="workspace-account" id="workspaceNoteStatus">Saved locally in this browser.</div></div>
-  <div class="workspace-quote" id="workspaceQuote"></div>
-  <footer><strong>AD JOY PANEL</strong><br>Operations Management System<br>Designed &amp; Developed by AD Joy | @adjoy.me</footer>
- </div>
-</section>
-  <iframe id="viewer" class="viewer-frame" title="Panel content" src="about:blank" hidden></iframe>
+
+
+  <!-- MOBILE MENU BACKDROP -->
+
+  <div
+    class="mobile-menu-overlay"
+    id="mobileMenuOverlay"
+    aria-hidden="true"
+  ></div>
+
+
+  <!-- ====================================================
+       DASHBOARD HOME
+  ==================================================== -->
+
+  <section
+    id="dashHome"
+    class="ops-dashboard"
+    aria-label="Dashboard home"
+  >
+
+    <div class="workspace">
+
+
+      <!-- ================================================
+           LEFT SIDE — WORKSPACE
+      ================================================ -->
+
+      <div class="workspace-left">
+
+
+        <!-- WELCOME CARD -->
+
+        <header class="workspace-card workspace-welcome">
+
+          <div class="workspace-label">
+            Your personal workspace
+          </div>
+
+          <h1 id="workspaceGreeting">
+            Welcome back!
+          </h1>
+
+          <p>
+            Welcome to your Operations Management Panel.
+          </p>
+
+          <div
+            class="workspace-clock"
+            id="workspaceClock"
+          ></div>
+
+          <div id="dashDate"></div>
+
+        </header>
+
+
+        <!-- OPERATIONAL TOOLS COUNT -->
+
+        <div class="workspace-card">
+
+          <div class="workspace-label">
+            Operational tools
+          </div>
+
+          <div
+            class="workspace-value"
+            id="workspaceToolCount"
+          ></div>
+
+          <div class="workspace-account">
+            Ready to use from the menu
+          </div>
+
+        </div>
+
+
+        <!-- QUICK NOTES -->
+
+        <div class="workspace-card">
+
+          <strong>Personal Quick Notes</strong>
+
+          <textarea
+            id="workspaceNotes"
+            placeholder="Write your important notes here..."
+            aria-label="Personal quick notes"
+          ></textarea>
+
+          <div
+            class="workspace-account"
+            id="workspaceNoteStatus"
+          >
+            Saved locally in this browser.
+          </div>
+
+        </div>
+
+
+        <!-- DAILY QUOTE -->
+
+        <div
+          class="workspace-quote"
+          id="workspaceQuote"
+        ></div>
+
+
+        <!-- FOOTER -->
+
+        <footer>
+
+          <strong>AD JOY PANEL</strong>
+
+          <br>
+
+          Operations Management System
+
+          <br>
+
+          Designed &amp; Developed by AD Joy | @adjoy.me
+
+        </footer>
+
+      </div>
+
+
+      <!-- ================================================
+           RIGHT SIDE — DAILY TO-DO
+      ================================================ -->
+
+      <div class="workspace-right">
+
+        <section
+          class="workspace-card todo-card"
+          aria-label="Daily to-do list"
+        >
+
+          <div class="todo-head">
+
+            <div>
+
+              <h2>Daily To-Do List</h2>
+
+              <div class="workspace-account">
+                Daily reset at 6:00 AM · Bangladesh time
+              </div>
+
+            </div>
+
+            <input
+              type="date"
+              id="todoDate"
+              aria-label="Task date"
+            >
+
+          </div>
+
+
+          <!-- TASK STATISTICS -->
+
+          <div class="todo-stats">
+
+            <div>
+              Total Tasks
+              <b id="todoTotal">0</b>
+            </div>
+
+            <div>
+              Completed
+              <b id="todoDone" style="color:#15803d">0</b>
+            </div>
+
+            <div>
+              Pending
+              <b id="todoPending" style="color:#b45309">0</b>
+            </div>
+
+          </div>
+
+
+          <!-- PROGRESS -->
+
+          <div class="todo-progress-label">
+
+            <span>Daily progress</span>
+
+            <strong id="todoPercent">0%</strong>
+
+          </div>
+
+          <div class="todo-progress">
+
+            <div id="todoBar" style="width:0%"></div>
+
+          </div>
+
+
+          <!-- ADD NEW TASK -->
+
+          <form id="todoForm" class="todo-add">
+
+            <input
+              id="todoInput"
+              placeholder="Enter a new task..."
+              maxlength="500"
+              required
+              aria-label="New task"
+            >
+
+            <button type="submit">
+              + Add Task
+            </button>
+
+          </form>
+
+
+          <!-- PRIORITY SORTING -->
+
+          <div class="todo-sort-actions">
+
+            <button type="button" id="todoSort">
+              ↕ Sort Tasks
+            </button>
+
+            <button type="button" id="todoSortSave" hidden>
+              Save Sort
+            </button>
+
+            <button type="button" id="todoSortCancel" hidden>
+              Cancel
+            </button>
+
+            <small id="todoSortHint"></small>
+
+          </div>
+
+
+          <!-- TASK LIST -->
+
+          <div id="todoList"></div>
+
+          <div
+            class="workspace-account"
+            id="todoStatus"
+            aria-live="polite"
+          ></div>
+
+        </section>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- OPERATIONAL PAGE VIEWER -->
+
+  <iframe
+    id="viewer"
+    class="viewer-frame"
+    title="Panel content"
+    src="about:blank"
+    hidden
+  ></iframe>
+
 </main>
 
 </div>
 
+
 <script>
+
 /* =========================================================
-   FIREBASE AUTH — single login gate for the whole panel.
-   Uses the SAME Firebase project as the Rider KM Tracker page,
-   so once signed in here, that page (and any future page using
-   this project) recognizes the session automatically — no
-   second login — as long as the whole project is served from
-   one origin (see the note at the bottom of this file).
+   FIREBASE AUTH CONFIGURATION
 ========================================================= */
+
 const firebaseConfig = {
+
   apiKey: "AIzaSyADm297kotJhrGe_TbM9dZCktoFDVBIIr4",
+
   authDomain: "adjoy-rider-tracker.firebaseapp.com",
+
   projectId: "adjoy-rider-tracker",
+
   storageBucket: "adjoy-rider-tracker.firebasestorage.app",
+
   messagingSenderId: "207253998908",
+
   appId: "1:207253998908:web:17f549b4a947b327f5e239",
+
   measurementId: "G-3CBEZGZVHM"
+
 };
+
 firebase.initializeApp(firebaseConfig);
+
 const fbAuth = firebase.auth();
-fbAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+
+fbAuth.setPersistence(
+  firebase.auth.Auth.Persistence.LOCAL
+).catch(console.error);
 
 
-const DAILY_TASKS = [
- 'Payment Mail', 'Customer Return Check', 'Customer Change Check',
- 'OSD Sheet Check', 'Return Mail', 'Assign Sheet Update',
- 'Tracking Sheet Yesterday Parcel Update', 'Tracking Sheet New Parcel Update',
- 'Van In & Out Time', 'DA Attendance'
-];
-let todoTimer;
-function todoWorkDate(now = new Date()) {
- // Bangladesh UTC+6, with the workday beginning at 06:00.
- // The two offsets cancel, so the UTC calendar date is the workday key.
- return now.toISOString().slice(0,10);
-}
-function initTodo(user){
- const el=id=>document.getElementById(id), date=el('todoDate'), form=el('todoForm'), input=el('todoInput'), list=el('todoList');
- let activeDay=todoWorkDate(); date.value=activeDay; date.max=activeDay;
- let tasks=[], storageOK=true, sorting=false, snapshot=[];
- const orderKey='opsTodoOrder:'+user.uid;
- const sortBtn=el('todoSort'), sortSave=el('todoSortSave'), sortCancel=el('todoSortCancel');
- function dailyOrder(){try{const saved=JSON.parse(localStorage.getItem(orderKey)||'[]');const valid=Array.isArray(saved)?[...new Set(saved.filter(n=>DAILY_TASKS.includes(n)))]:[];return valid.concat(DAILY_TASKS.filter(n=>!valid.includes(n)));}catch(e){return [...DAILY_TASKS];}}
- function sortControls(){sortBtn.hidden=sorting;sortBtn.disabled=date.value!==activeDay;sortSave.hidden=!sorting;sortCancel.hidden=!sorting;date.disabled=sorting;input.disabled=sorting;form.querySelector('button').disabled=sorting;el('todoSortHint').textContent=sorting?'Use ↑ ↓ to set daily priority, then Save Sort.':'Saved order repeats every day.';}
- sortBtn.onclick=()=>{if(date.value!==activeDay)return;snapshot=tasks.slice();sorting=true;render();};
- sortCancel.onclick=()=>{tasks=snapshot;sorting=false;render();};
- sortSave.onclick=()=>{try{localStorage.setItem(orderKey,JSON.stringify(tasks.filter(t=>t.daily).map(t=>t.name)));}catch(e){el('todoSortHint').textContent='Unable to save order. Please enable local storage.';return;}sorting=false;save();};
- const key=()=> 'opsTodo:'+user.uid+':'+date.value;
- const normalize=name=>String(name||'').trim().toLowerCase().replace(/yestarday/g,'yesterday').replace(/attandance/g,'attendance');
- function render(){
-  sortControls(); list.replaceChildren(); const done=tasks.filter(t=>t.done).length, pct=tasks.length?Math.round(done/tasks.length*100):0;
-  el('todoTotal').textContent=tasks.length;el('todoDone').textContent=done;el('todoPending').textContent=tasks.length-done;el('todoPercent').textContent=pct+'%';el('todoBar').style.width=pct+'%';
-  tasks.forEach((task,i)=>{const row=document.createElement('div');row.className='todo-row'+(task.done?' done':'');const label=document.createElement('label'), check=document.createElement('input'), text=document.createElement('span');check.type='checkbox';check.checked=task.done;check.disabled=sorting;text.textContent=task.name;check.onchange=()=>{task.done=check.checked;save();};label.append(check,text);row.append(label);if(task.daily){const tag=document.createElement('small');tag.className='daily-tag';tag.textContent='Daily';row.append(tag);if(sorting){const rank=document.createElement('small');rank.className='sort-rank';rank.textContent=String(i+1);row.prepend(rank);[-1,1].forEach(step=>{const btn=document.createElement('button');btn.type='button';btn.className='sort-arrow';btn.textContent=step<0?'↑':'↓';btn.setAttribute('aria-label',(step<0?'Move up: ':'Move down: ')+task.name);const target=i+step;btn.disabled=target<0||target>=tasks.length||!tasks[target].daily;btn.onclick=()=>{[tasks[i],tasks[target]]=[tasks[target],tasks[i]];render();};row.append(btn);});}}else{const del=document.createElement('button');del.type='button';del.disabled=sorting;del.textContent='Delete';del.onclick=()=>{if(confirm('Delete this task?')){tasks.splice(i,1);save();}};row.append(del);}list.append(row);});
-  el('todoStatus').textContent=!storageOK?'Local storage unavailable — changes may not be saved.':!tasks.length?'No saved tasks for this date.':done===tasks.length?'All tasks completed! · Saved on this browser.':(tasks.length-done)+' tasks remaining · Saved on this browser.';
- }
- function load(){if(!date.value)return;try{const data=JSON.parse(localStorage.getItem(key())||'[]');tasks=Array.isArray(data)?data:[];storageOK=true;}catch(e){tasks=[];storageOK=false;}
-  if(date.value===activeDay){const old=tasks;tasks=dailyOrder().map(name=>({name,done:old.some(t=>normalize(t.name)===normalize(name)&&t.done),daily:true})).concat(old.filter(t=>!DAILY_TASKS.some(name=>normalize(name)===normalize(t.name))));save();}else render();
- }
- function save(){try{localStorage.setItem(key(),JSON.stringify(tasks));storageOK=true;}catch(e){storageOK=false;}render();}
- function rollover(){const next=todoWorkDate();if(next!==activeDay){sorting=false;activeDay=next;date.max=next;date.value=next;load();}}
- date.onchange=()=>{if(date.value>activeDay)date.value=activeDay;load();};form.onsubmit=e=>{e.preventDefault();rollover();const name=input.value.trim();if(!name||!date.value)return;tasks.push({name,done:false});input.value='';save();input.focus();};load();
- todoTimer=setInterval(rollover,1000);
-}
-function stopTodo(){clearInterval(todoTimer);['todoSort','todoSortSave','todoSortCancel'].forEach(id=>document.getElementById(id).onclick=null);document.getElementById('todoForm').onsubmit=null;document.getElementById('todoDate').onchange=null;document.getElementById('todoInput').value='';document.getElementById('todoList').replaceChildren();}
+/* =========================================================
+   MOBILE MENU CONTROLLER
+========================================================= */
 
-let workspaceTimer;
-function stopWorkspace(){
- clearInterval(workspaceTimer);
- stopTodo();
- const notes=document.getElementById('workspaceNotes');
- notes.oninput=null; notes.value='';
- document.getElementById('workspaceAccount').textContent='';
-}
-function initWorkspace(user){
- stopWorkspace();
- initTodo(user);
- const el=id=>document.getElementById(id);
- el('workspaceAccount').textContent=user.email||user.displayName||'Signed in';
- el('workspaceToolCount').textContent=String(document.querySelectorAll('.ops-menu .dash-tool').length).padStart(2,'0');
- const notes=el('workspaceNotes'), key='opsNotes:'+user.uid;
- try{notes.value=localStorage.getItem(key)||'';el('workspaceNoteStatus').textContent='Saved locally in this browser.';}catch(e){el('workspaceNoteStatus').textContent='Local storage unavailable.';}
- notes.oninput=()=>{try{localStorage.setItem(key,notes.value);el('workspaceNoteStatus').textContent='All changes saved locally.';}catch(e){el('workspaceNoteStatus').textContent='Unable to save notes.';}};
- const quotes=['Stay organized. Work smarter.','Small steps make big progress.','Focus on what matters.','Consistency builds success.','Make today productive.','Progress is better than perfection.','Good planning makes work easier.'];
- function tick(){
-  const now=new Date(), h=now.getHours();
-  el('workspaceGreeting').textContent=h<12?'Good Morning!':h<17?'Good Afternoon!':'Good Evening!';
-  el('workspaceClock').textContent=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
-  el('dashDate').textContent=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  const day=Math.floor(Date.UTC(now.getFullYear(),now.getMonth(),now.getDate())/86400000);
-  el('workspaceQuote').textContent=quotes[day%quotes.length];
- }
- tick();workspaceTimer=setInterval(tick,1000);
-}
+const MobileMenu = (() => {
 
-const Auth = (() => {
-  function showError(msg){
-    const el = document.getElementById('authError');
-    el.textContent = msg;
-    el.style.display = 'block';
-  }
-  function hideError(){
-    document.getElementById('authError').style.display = 'none';
+  const toggle = document.getElementById(
+    'mobileMenuToggle'
+  );
+
+  const menu = document.getElementById(
+    'operationalMenu'
+  );
+
+  const overlay = document.getElementById(
+    'mobileMenuOverlay'
+  );
+
+  function setOpen(open) {
+
+    menu.classList.toggle('mobile-open', open);
+
+    overlay.classList.toggle('active', open);
+
+    toggle.textContent = open
+      ? '✕ Close'
+      : '☰ Menu';
+
+    toggle.setAttribute(
+      'aria-expanded',
+      String(open)
+    );
+
   }
 
-  async function submit(){
-    const email = document.getElementById('authEmail').value.trim();
-    const password = document.getElementById('authPassword').value;
-    hideError();
-    if(!email || !password) return showError('Enter both email and password.');
-    const btn = document.getElementById('authSubmitBtn');
-    btn.disabled = true;
-    btn.textContent = 'Signing in…';
-    try{
-      await fbAuth.signInWithEmailAndPassword(email, password);
-    }catch(e){
-      showError(friendlyError(e));
-    }finally{
-      btn.disabled = false;
-      btn.textContent = 'Sign In';
-    }
+  function close() {
+
+    setOpen(false);
+
   }
 
-  function friendlyError(e){
-    const map = {
-      'auth/invalid-email': 'That email address looks invalid.',
-      'auth/user-not-found': 'No account found with that email.',
-      'auth/wrong-password': 'Incorrect password.',
-      'auth/invalid-credential': 'Incorrect email or password.',
-      'auth/email-already-in-use': 'An account already exists with that email.',
-      'auth/weak-password': 'Password must be at least 6 characters.',
-      'auth/too-many-requests': 'Too many attempts. Please wait and try again.'
-    };
-    return map[e.code] || 'Something went wrong. Please try again.';
-  }
+  toggle.addEventListener('click', () => {
 
-  async function logout(){
-    if(!confirm('Log out of the Operations Panel?')) return;
-    await fbAuth.signOut();
-  }
+    setOpen(
+      !menu.classList.contains('mobile-open')
+    );
 
-  fbAuth.onAuthStateChanged((user) => {
-    document.getElementById('bootLoading').classList.add('hidden');
-    if(user){
-      document.getElementById('authScreen').classList.add('hidden');
-      document.getElementById('appRoot').classList.remove('hidden');
-      const label = document.getElementById('accountEmailLabel');
-      if(label) label.textContent = user.displayName ? `${user.displayName} · ${user.email}` : user.email;
-      initWorkspace(user);
-      initPanel();
-    } else {
-      stopWorkspace();
-      document.getElementById('appRoot').classList.add('hidden');
-      document.getElementById('authScreen').classList.remove('hidden');
-    }
   });
 
-  return { submit, logout };
+  overlay.addEventListener('click', close);
+
+  menu.addEventListener('click', e => {
+
+    if (e.target.closest('button')) {
+
+      close();
+
+    }
+
+  });
+
+  document.addEventListener('keydown', e => {
+
+    if (e.key === 'Escape') {
+
+      close();
+
+    }
+
+  });
+
+  window.addEventListener('resize', () => {
+
+    if (window.innerWidth > 1200) {
+
+      close();
+
+    }
+
+  });
+
+  window.addEventListener('hashchange', close);
+
+  window.addEventListener('popstate', close);
+
+  return { close };
+
 })();
 
+
 /* =========================================================
-   PANEL (history-aware navigation) — only runs
-   once the user is signed in.
+   DAILY DEFAULT TASKS
 ========================================================= */
-let panelStarted = false;
-function initPanel(){
-  if(panelStarted) return;
-  panelStarted = true;
-  const viewer = document.getElementById('viewer');
-  const home = document.getElementById('dashHome');
-  const dateEl = document.getElementById('dashDate');
-  const tools = [...document.querySelectorAll('.dash-tool')];
-  const paths = new Set(tools.map(el=>el.dataset.open));
-  function currentRoute(){
-    const params = new URLSearchParams(location.hash.replace(/^#/, ''));
-    const page = params.get('page');
-    return paths.has(page) ? page : null;
-  }
-  // Replace iframe navigations instead of adding them to browser history.
-  // Only top-level Dashboard routes should be navigable with Back/Forward.
-  let displayedPage = null;
-  function setFramePage(page){
-    if(displayedPage === page) return;
-    displayedPage = page;
-    const url = page ? new URL(page, document.baseURI).href : 'about:blank';
-    try {
-      viewer.contentWindow.location.replace(url);
-    } catch(e) {
-      // Fallback for browsers that restrict iframe access.
-      viewer.src = url;
-    }
-  }
-  function renderRoute(page){
-    const isHome = !page;
-    home.hidden = !isHome;
-    viewer.hidden = isHome;
-    setFramePage(page);
-    document.getElementById('topHomeBtn').classList.toggle('active', isHome);
-    tools.forEach(el => { const active = el.dataset.open === page; el.classList.toggle('active', active); if(active) el.setAttribute('aria-current','page'); else el.removeAttribute('aria-current'); });
-    try{localStorage.setItem('opsPanelLastPage',page||'dashboard')}catch(e){}
-  }
-  function navigate(page){
-    const valid = paths.has(page) ? page : null;
-    const hash = valid ? '#page='+encodeURIComponent(valid) : '#home';
-    if(location.hash === hash){ renderRoute(valid); return; }
-    history.pushState({opsPage:valid},'',hash);
-    renderRoute(valid);
-  }
-  tools.forEach(el=>el.addEventListener('click',()=>navigate(el.dataset.open)));
-  document.getElementById('topHomeBtn').addEventListener('click',()=>navigate(null));
-  window.addEventListener('popstate',()=>renderRoute(currentRoute()));
-  window.addEventListener('hashchange',()=>renderRoute(currentRoute()));
-  renderRoute(currentRoute());
+
+const DAILY_TASKS = [
+
+  'Payment Mail',
+
+  'Customer Return Check',
+
+  'Customer Change Check',
+
+  'OSD Sheet Check',
+
+  'Return Mail',
+
+  'Assign Sheet Update',
+
+  'Tracking Sheet Yesterday Parcel Update',
+
+  'Tracking Sheet New Parcel Update',
+
+  'Van In & Out Time',
+
+  'DA Attendance'
+
+];
+
+let todoTimer;
+
+
+/* =========================================================
+   BANGLADESH WORKDAY
+
+   Resets at 06:00 AM Bangladesh Time
+========================================================= */
+
+function todoWorkDate(now = new Date()) {
+
+  return now.toISOString().slice(0, 10);
+
 }
+
+
+/* =========================================================
+   INITIALIZE DAILY TO-DO
+========================================================= */
+
+function initTodo(user) {
+
+  clearInterval(todoTimer);
+
+  const el = id => document.getElementById(id);
+
+  const date = el('todoDate');
+
+  const form = el('todoForm');
+
+  const input = el('todoInput');
+
+  const list = el('todoList');
+
+  let activeDay = todoWorkDate();
+
+  date.value = activeDay;
+
+  date.max = activeDay;
+
+  let tasks = [];
+
+  let storageOK = true;
+
+  let sorting = false;
+
+  let snapshot = [];
+
+  const orderKey = 'opsTodoOrder:' + user.uid;
+
+  const sortBtn = el('todoSort');
+
+  const sortSave = el('todoSortSave');
+
+  const sortCancel = el('todoSortCancel');
+
+
+  /* SAVED DAILY PRIORITY ORDER */
+
+  function dailyOrder() {
+
+    try {
+
+      const saved = JSON.parse(
+        localStorage.getItem(orderKey) || '[]'
+      );
+
+      const valid = Array.isArray(saved)
+
+        ? [...new Set(
+            saved.filter(n => DAILY_TASKS.includes(n))
+          )]
+
+        : [];
+
+      return valid.concat(
+
+        DAILY_TASKS.filter(n => !valid.includes(n))
+
+      );
+
+    } catch (e) {
+
+      return [...DAILY_TASKS];
+
+    }
+
+  }
+
+
+  /* SORT CONTROLS */
+
+  function sortControls() {
+
+    sortBtn.hidden = sorting;
+
+    sortBtn.disabled = date.value !== activeDay;
+
+    sortSave.hidden = !sorting;
+
+    sortCancel.hidden = !sorting;
+
+    date.disabled = sorting;
+
+    input.disabled = sorting;
+
+    form.querySelector('button').disabled = sorting;
+
+    el('todoSortHint').textContent = sorting
+
+      ? 'Use ↑ ↓ to set daily priority, then Save Sort.'
+
+      : 'Saved order repeats every day.';
+
+  }
+
+
+  /* START SORTING */
+
+  sortBtn.onclick = () => {
+
+    if (date.value !== activeDay) return;
+
+    snapshot = tasks.slice();
+
+    sorting = true;
+
+    render();
+
+  };
+
+
+  /* CANCEL SORTING */
+
+  sortCancel.onclick = () => {
+
+    tasks = snapshot;
+
+    sorting = false;
+
+    render();
+
+  };
+
+
+  /* SAVE PRIORITY ORDER */
+
+  sortSave.onclick = () => {
+
+    try {
+
+      localStorage.setItem(
+
+        orderKey,
+
+        JSON.stringify(
+
+          tasks.filter(t => t.daily).map(t => t.name)
+
+        )
+
+      );
+
+    } catch (e) {
+
+      el('todoSortHint').textContent =
+
+        'Unable to save order. Please enable local storage.';
+
+      return;
+
+    }
+
+    sorting = false;
+
+    save();
+
+  };
+
+
+  /* USER-SPECIFIC DAILY STORAGE */
+
+  const key = () =>
+
+    'opsTodo:' + user.uid + ':' + date.value;
+
+
+  const normalize = name =>
+
+    String(name || '')
+
+      .trim()
+
+      .toLowerCase()
+
+      .replace(/yestarday/g, 'yesterday')
+
+      .replace(/attandance/g, 'attendance');
+
+
+  /* =======================================================
+     RENDER TASK LIST
+  ======================================================= */
+
+  function render() {
+
+    sortControls();
+
+    list.replaceChildren();
+
+    const done = tasks.filter(t => t.done).length;
+
+    const pct = tasks.length
+
+      ? Math.round(done / tasks.length * 100)
+
+      : 0;
+
+    el('todoTotal').textContent = tasks.length;
+
+    el('todoDone').textContent = done;
+
+    el('todoPending').textContent = tasks.length - done;
+
+    el('todoPercent').textContent = pct + '%';
+
+    el('todoBar').style.width = pct + '%';
+
+
+    tasks.forEach((task, i) => {
+
+      const row = document.createElement('div');
+
+      row.className = 'todo-row' +
+
+        (task.done ? ' done' : '');
+
+
+      const label = document.createElement('label');
+
+      const check = document.createElement('input');
+
+      const text = document.createElement('span');
+
+      check.type = 'checkbox';
+
+      check.checked = task.done;
+
+      check.disabled = sorting;
+
+      text.textContent = task.name;
+
+      check.onchange = () => {
+
+        task.done = check.checked;
+
+        save();
+
+      };
+
+      label.append(check, text);
+
+      row.append(label);
+
+
+      /* DAILY TASK */
+
+      if (task.daily) {
+
+        const tag = document.createElement('small');
+
+        tag.className = 'daily-tag';
+
+        tag.textContent = 'Daily';
+
+        row.append(tag);
+
+
+        /* SORTING MODE */
+
+        if (sorting) {
+
+          const rank = document.createElement('small');
+
+          rank.className = 'sort-rank';
+
+          rank.textContent = String(i + 1);
+
+          row.prepend(rank);
+
+
+          [-1, 1].forEach(step => {
+
+            const btn = document.createElement('button');
+
+            btn.type = 'button';
+
+            btn.className = 'sort-arrow';
+
+            btn.textContent = step < 0 ? '↑' : '↓';
+
+            btn.setAttribute(
+
+              'aria-label',
+
+              (step < 0 ? 'Move up: ' : 'Move down: ')
+
+              + task.name
+
+            );
+
+            const target = i + step;
+
+            btn.disabled =
+
+              target < 0 ||
+
+              target >= tasks.length ||
+
+              !tasks[target].daily;
+
+            btn.onclick = () => {
+
+              [tasks[i], tasks[target]] =
+
+                [tasks[target], tasks[i]];
+
+              render();
+
+            };
+
+            row.append(btn);
+
+          });
+
+        }
+
+      } else {
+
+
+        /* CUSTOM TASK DELETE */
+
+        const del = document.createElement('button');
+
+        del.type = 'button';
+
+        del.disabled = sorting;
+
+        del.textContent = 'Delete';
+
+        del.onclick = () => {
+
+          if (confirm('Delete this task?')) {
+
+            tasks.splice(i, 1);
+
+            save();
+
+          }
+
+        };
+
+        row.append(del);
+
+      }
+
+      list.append(row);
+
+    });
+
+
+    /* STATUS MESSAGE */
+
+    el('todoStatus').textContent =
+
+      !storageOK
+
+        ? 'Local storage unavailable — changes may not be saved.'
+
+        : !tasks.length
+
+          ? 'No saved tasks for this date.'
+
+          : done === tasks.length
+
+            ? 'All tasks completed! · Saved on this browser.'
+
+            : (tasks.length - done) +
+
+              ' tasks remaining · Saved on this browser.';
+
+  }
+
+
+  /* =======================================================
+     LOAD TASKS
+  ======================================================= */
+
+  function load() {
+
+    if (!date.value) return;
+
+    try {
+
+      const data = JSON.parse(
+
+        localStorage.getItem(key()) || '[]'
+
+      );
+
+      tasks = Array.isArray(data) ? data : [];
+
+      storageOK = true;
+
+    } catch (e) {
+
+      tasks = [];
+
+      storageOK = false;
+
+    }
+
+
+    if (date.value === activeDay) {
+
+      const old = tasks;
+
+      tasks = dailyOrder().map(name => ({
+
+        name,
+
+        done: old.some(t =>
+
+          normalize(t.name) === normalize(name) && t.done
+
+        ),
+
+        daily: true
+
+      })).concat(
+
+        old.filter(t =>
+
+          !DAILY_TASKS.some(name =>
+
+            normalize(name) === normalize(t.name)
+
+          )
+
+        )
+
+      );
+
+      save();
+
+    } else {
+
+      render();
+
+    }
+
+  }
+
+
+  /* SAVE TASKS */
+
+  function save() {
+
+    try {
+
+      localStorage.setItem(
+
+        key(),
+
+        JSON.stringify(tasks)
+
+      );
+
+      storageOK = true;
+
+    } catch (e) {
+
+      storageOK = false;
+
+    }
+
+    render();
+
+  }
+
+
+  /* AUTOMATIC 6 AM RESET */
+
+  function rollover() {
+
+    const next = todoWorkDate();
+
+    if (next !== activeDay) {
+
+      sorting = false;
+
+      activeDay = next;
+
+      date.max = next;
+
+      date.value = next;
+
+      load();
+
+    }
+
+  }
+
+
+  /* DATE CHANGE */
+
+  date.onchange = () => {
+
+    if (date.value > activeDay) {
+
+      date.value = activeDay;
+
+    }
+
+    load();
+
+  };
+
+
+  /* ADD TASK */
+
+  form.onsubmit = e => {
+
+    e.preventDefault();
+
+    rollover();
+
+    const name = input.value.trim();
+
+    if (!name || !date.value) return;
+
+    tasks.push({
+
+      name,
+
+      done: false
+
+    });
+
+    input.value = '';
+
+    save();
+
+    input.focus();
+
+  };
+
+
+  load();
+
+  todoTimer = setInterval(rollover, 1000);
+
+}
+
+
+/* =========================================================
+   STOP TO-DO SESSION
+========================================================= */
+
+function stopTodo() {
+
+  clearInterval(todoTimer);
+
+  [
+
+    'todoSort',
+
+    'todoSortSave',
+
+    'todoSortCancel'
+
+  ].forEach(id => {
+
+    document.getElementById(id).onclick = null;
+
+  });
+
+  document.getElementById('todoForm').onsubmit = null;
+
+  document.getElementById('todoDate').onchange = null;
+
+  document.getElementById('todoInput').value = '';
+
+  document.getElementById('todoList').replaceChildren();
+
+}
+
+
+/* =========================================================
+   WORKSPACE CONTROLLER
+========================================================= */
+
+let workspaceTimer;
+
+
+function stopWorkspace() {
+
+  clearInterval(workspaceTimer);
+
+  stopTodo();
+
+  const notes = document.getElementById(
+
+    'workspaceNotes'
+
+  );
+
+  notes.oninput = null;
+
+  notes.value = '';
+
+}
+
+
+function initWorkspace(user) {
+
+  stopWorkspace();
+
+  initTodo(user);
+
+  const el = id => document.getElementById(id);
+
+
+  /* OPERATIONAL TOOLS COUNT */
+
+  el('workspaceToolCount').textContent = String(
+
+    document.querySelectorAll(
+
+      '.ops-menu .dash-tool'
+
+    ).length
+
+  ).padStart(2, '0');
+
+
+  /* PERSONAL QUICK NOTES */
+
+  const notes = el('workspaceNotes');
+
+  const key = 'opsNotes:' + user.uid;
+
+  try {
+
+    notes.value = localStorage.getItem(key) || '';
+
+    el('workspaceNoteStatus').textContent =
+
+      'Saved locally in this browser.';
+
+  } catch (e) {
+
+    el('workspaceNoteStatus').textContent =
+
+      'Local storage unavailable.';
+
+  }
+
+  notes.oninput = () => {
+
+    try {
+
+      localStorage.setItem(key, notes.value);
+
+      el('workspaceNoteStatus').textContent =
+
+        'All changes saved locally.';
+
+    } catch (e) {
+
+      el('workspaceNoteStatus').textContent =
+
+        'Unable to save notes.';
+
+    }
+
+  };
+
+
+  /* DAILY QUOTES */
+
+  const quotes = [
+
+    'Stay organized. Work smarter.',
+
+    'Small steps make big progress.',
+
+    'Focus on what matters.',
+
+    'Consistency builds success.',
+
+    'Make today productive.',
+
+    'Progress is better than perfection.',
+
+    'Good planning makes work easier.'
+
+  ];
+
+
+  /* BANGLADESH CLOCK & GREETING */
+
+  function tick() {
+
+    const now = new Date();
+
+    const bdTime = new Date(
+
+      now.getTime() + 6 * 60 * 60 * 1000
+
+    );
+
+    const h = bdTime.getUTCHours();
+
+    el('workspaceGreeting').textContent =
+
+      h < 12
+
+        ? 'Good Morning!'
+
+        : h < 17
+
+          ? 'Good Afternoon!'
+
+          : 'Good Evening!';
+
+
+    el('workspaceClock').textContent =
+
+      now.toLocaleTimeString('en-US', {
+
+        timeZone: 'Asia/Dhaka',
+
+        hour: '2-digit',
+
+        minute: '2-digit',
+
+        second: '2-digit',
+
+        hour12: true
+
+      });
+
+
+    el('dashDate').textContent =
+
+      now.toLocaleDateString('en-GB', {
+
+        timeZone: 'Asia/Dhaka',
+
+        weekday: 'long',
+
+        day: 'numeric',
+
+        month: 'long',
+
+        year: 'numeric'
+
+      });
+
+
+    const day = Math.floor(
+
+      bdTime.getTime() / 86400000
+
+    );
+
+    el('workspaceQuote').textContent =
+
+      quotes[day % quotes.length];
+
+  }
+
+  tick();
+
+  workspaceTimer = setInterval(tick, 1000);
+
+}
+
+
+/* =========================================================
+   FIREBASE AUTH CONTROLLER
+========================================================= */
+
+const Auth = (() => {
+
+
+  function showError(msg) {
+
+    const el = document.getElementById('authError');
+
+    el.textContent = msg;
+
+    el.style.display = 'block';
+
+  }
+
+
+  function hideError() {
+
+    document.getElementById(
+
+      'authError'
+
+    ).style.display = 'none';
+
+  }
+
+
+  /* SIGN IN */
+
+  async function submit() {
+
+    const email = document.getElementById(
+
+      'authEmail'
+
+    ).value.trim();
+
+    const password = document.getElementById(
+
+      'authPassword'
+
+    ).value;
+
+    hideError();
+
+    if (!email || !password) {
+
+      return showError(
+
+        'Enter both email and password.'
+
+      );
+
+    }
+
+    const btn = document.getElementById(
+
+      'authSubmitBtn'
+
+    );
+
+    if (btn.disabled) return;
+
+    btn.disabled = true;
+
+    btn.textContent = 'Signing in…';
+
+    try {
+
+      await fbAuth.signInWithEmailAndPassword(
+
+        email,
+
+        password
+
+      );
+
+    } catch (e) {
+
+      showError(friendlyError(e));
+
+    } finally {
+
+      btn.disabled = false;
+
+      btn.textContent = 'Sign In';
+
+    }
+
+  }
+
+
+  /* FRIENDLY AUTH ERRORS */
+
+  function friendlyError(e) {
+
+    const map = {
+
+      'auth/invalid-email':
+
+        'That email address looks invalid.',
+
+      'auth/user-not-found':
+
+        'No account found with that email.',
+
+      'auth/wrong-password':
+
+        'Incorrect password.',
+
+      'auth/invalid-credential':
+
+        'Incorrect email or password.',
+
+      'auth/email-already-in-use':
+
+        'An account already exists with that email.',
+
+      'auth/weak-password':
+
+        'Password must be at least 6 characters.',
+
+      'auth/too-many-requests':
+
+        'Too many attempts. Please wait and try again.',
+
+      'auth/network-request-failed':
+
+        'Network error. Check your internet connection.'
+
+    };
+
+    return map[e.code] ||
+
+      'Something went wrong. Please try again.';
+
+  }
+
+
+  /* LOGOUT */
+
+  async function logout() {
+
+    if (!confirm('Log out of the Operations Panel?')) {
+
+      return;
+
+    }
+
+    MobileMenu.close();
+
+    try {
+
+      await fbAuth.signOut();
+
+    } catch (e) {
+
+      alert('Unable to log out. Please try again.');
+
+    }
+
+  }
+
+
+  /* AUTH STATE */
+
+  fbAuth.onAuthStateChanged(user => {
+
+    document.getElementById(
+
+      'bootLoading'
+
+    ).classList.add('hidden');
+
+
+    if (user) {
+
+      document.getElementById(
+
+        'authScreen'
+
+      ).classList.add('hidden');
+
+      document.getElementById(
+
+        'appRoot'
+
+      ).classList.remove('hidden');
+
+      document.getElementById(
+
+        'authPassword'
+
+      ).value = '';
+
+      initWorkspace(user);
+
+      initPanel();
+
+    } else {
+
+      MobileMenu.close();
+
+      stopWorkspace();
+
+      document.getElementById(
+
+        'appRoot'
+
+      ).classList.add('hidden');
+
+      document.getElementById(
+
+        'authScreen'
+
+      ).classList.remove('hidden');
+
+      if (panelController) {
+
+        panelController.reset();
+
+      }
+
+    }
+
+  });
+
+  return {
+
+    submit,
+
+    logout
+
+  };
+
+})();
+
+
+/* =========================================================
+   HISTORY-AWARE PANEL NAVIGATION
+========================================================= */
+
+let panelController = null;
+
+
+function initPanel() {
+
+  if (panelController) {
+
+    panelController.refresh();
+
+    return;
+
+  }
+
+  const viewer = document.getElementById('viewer');
+
+  const home = document.getElementById('dashHome');
+
+  const homeBtn = document.getElementById('topHomeBtn');
+
+  const tools = [
+
+    ...document.querySelectorAll('.ops-menu .dash-tool')
+
+  ];
+
+  const paths = new Set(
+
+    tools.map(el => el.dataset.open)
+
+  );
+
+
+  /* GET CURRENT ROUTE */
+
+  function currentRoute() {
+
+    const params = new URLSearchParams(
+
+      location.hash.replace(/^#/, '')
+
+    );
+
+    const page = params.get('page');
+
+    return paths.has(page) ? page : null;
+
+  }
+
+
+  /* IFRAME NAVIGATION */
+
+  let displayedPage = null;
+
+  function setFramePage(page) {
+
+    if (displayedPage === page) return;
+
+    displayedPage = page;
+
+    const url = page
+
+      ? new URL(page, document.baseURI).href
+
+      : 'about:blank';
+
+    try {
+
+      viewer.contentWindow.location.replace(url);
+
+    } catch (e) {
+
+      viewer.src = url;
+
+    }
+
+  }
+
+
+  /* RENDER SELECTED PANEL */
+
+  function renderRoute(page) {
+
+    if (!fbAuth.currentUser) return;
+
+    MobileMenu.close();
+
+    const isHome = !page;
+
+    home.hidden = !isHome;
+
+    viewer.hidden = isHome;
+
+    setFramePage(page);
+
+    homeBtn.classList.toggle('active', isHome);
+
+    if (isHome) {
+
+      homeBtn.setAttribute('aria-current', 'page');
+
+    } else {
+
+      homeBtn.removeAttribute('aria-current');
+
+    }
+
+
+    tools.forEach(el => {
+
+      const active = el.dataset.open === page;
+
+      el.classList.toggle('active', active);
+
+      if (active) {
+
+        el.setAttribute('aria-current', 'page');
+
+      } else {
+
+        el.removeAttribute('aria-current');
+
+      }
+
+    });
+
+    try {
+
+      localStorage.setItem(
+
+        'opsPanelLastPage',
+
+        page || 'dashboard'
+
+      );
+
+    } catch (e) {}
+
+  }
+
+
+  /* NAVIGATE TO TOOL */
+
+  function navigate(page) {
+
+    const valid = paths.has(page) ? page : null;
+
+    const hash = valid
+
+      ? '#page=' + encodeURIComponent(valid)
+
+      : '#home';
+
+    if (location.hash === hash) {
+
+      renderRoute(valid);
+
+      return;
+
+    }
+
+    history.pushState(
+
+      { opsPage: valid },
+
+      '',
+
+      hash
+
+    );
+
+    renderRoute(valid);
+
+  }
+
+
+  /* TOOL BUTTON EVENTS */
+
+  tools.forEach(el => {
+
+    el.addEventListener('click', () => {
+
+      navigate(el.dataset.open);
+
+    });
+
+  });
+
+
+  /* HOME BUTTON */
+
+  homeBtn.addEventListener('click', () => {
+
+    navigate(null);
+
+  });
+
+
+  /* BROWSER BACK / FORWARD */
+
+  window.addEventListener('popstate', () => {
+
+    renderRoute(currentRoute());
+
+  });
+
+  window.addEventListener('hashchange', () => {
+
+    renderRoute(currentRoute());
+
+  });
+
+
+  /* PANEL SESSION CONTROLLER */
+
+  panelController = {
+
+    refresh() {
+
+      renderRoute(currentRoute());
+
+    },
+
+    reset() {
+
+      displayedPage = null;
+
+      try {
+
+        viewer.contentWindow.location.replace(
+
+          'about:blank'
+
+        );
+
+      } catch (e) {
+
+        viewer.src = 'about:blank';
+
+      }
+
+      viewer.hidden = true;
+
+      home.hidden = false;
+
+      MobileMenu.close();
+
+    }
+
+  };
+
+  renderRoute(currentRoute());
+
+}
+
 </script>
 
 </body>
