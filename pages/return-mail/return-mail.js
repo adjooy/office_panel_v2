@@ -34,72 +34,59 @@ function escapeReturnHTML(value) {
 }
 
 function parseReturnData(text) {
-  const rows = [];
-  const consignmentIds = new Set();
-  const basketIds = new Set();
+  const consignmentRegex = /^[FRCE](?=[A-Z0-9]{10}$)(?=[A-Z0-9]*\d)[A-Z0-9]{10}$/;
+  const basketRegex = /^B(?=[A-Z0-9]{10}$)(?=[A-Z0-9]*\d)[A-Z0-9]{10}$/;
+  const runRegex = /^\d{5,12}$/;
 
-  let current = {};
+  const rows = [];
+  const seen = new Map();
+  const basketIds = new Set();
+  let current = null;
 
   function saveCurrent() {
-    // Basket or RUN alone must not create a parcel row.
-    if (current.consignment) {
-      rows.push({ ...current });
+    if (!current) return;
+    const prior = seen.get(current.consignment);
+    if (prior) {
+      // Repeat of the same ID with different metadata should not create
+      // another parcel or a misleading email count.
+      if ((prior.basket && current.basket && prior.basket !== current.basket) ||
+          (prior.run && current.run && prior.run !== current.run)) {
+        throw new Error('Conflicting Basket/Run for ' + current.consignment);
+      }
+      if (!prior.basket) prior.basket = current.basket || '';
+      if (!prior.run) prior.run = current.run || '';
+    } else {
+      const row = { ...current };
+      seen.set(row.consignment, row);
+      rows.push(row);
     }
-
-    current = {};
+    if (current.basket) basketIds.add(current.basket);
+    current = null;
   }
 
-  const lines = text
-    .split(/\r?\n/)
-    .map(line => line.trim())
-    .filter(Boolean);
-
-  for (const line of lines) {
-    const tokens = line.toUpperCase().match(/\b[A-Z0-9]+\b/g) || [];
-
-    for (const token of tokens) {
-      // Consignment ID starts with R.
-      if (/^[FRCE](?=[A-Z0-9]{10}$)(?=[A-Z0-9]*\d)[A-Z0-9]{10}$/.test(token)) {
-        saveCurrent();
-        current.consignment = token;
-        consignmentIds.add(token);
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim().toUpperCase();
+    if (!line) continue;
+    // CID Extractor provides tab-separated rows. Only accept pure
+    // ID fields, not arbitrary numeric values from a copied web page.
+    const tokens = line.split(/\s+/).filter(Boolean);
+    const first = tokens[0];
+    if (consignmentRegex.test(first)) {
+      saveCurrent();
+      current = { consignment: first, basket: '', run: '' };
+      for (const token of tokens.slice(1)) {
+        if (basketRegex.test(token)) current.basket = token;
+        else if (runRegex.test(token)) current.run = token;
       }
-
-      // Basket ID starts with B.
-      else if (/^B[A-Z0-9]{8,}$/.test(token)) {
-        current.basket = token;
-        basketIds.add(token);
-      }
-
-      else if (/^\d{4,10}$/.test(token)) {
-        current.run = token;
-      }
+    } else if (current && tokens.length === 1) {
+      if (basketRegex.test(first)) current.basket = first;
+      else if (runRegex.test(first)) current.run = first;
     }
   }
-
   saveCurrent();
-
-  // Remove exact duplicate rows.
-  const seenRows = new Set();
-
-  const uniqueRows = rows.filter(row => {
-    const key = JSON.stringify([
-      row.consignment,
-      row.basket || '',
-      row.run || ''
-    ]);
-
-    if (seenRows.has(key)) {
-      return false;
-    }
-
-    seenRows.add(key);
-    return true;
-  });
-
   return {
-    rows: uniqueRows,
-    consignmentCount: consignmentIds.size,
+    rows,
+    consignmentCount: rows.length,
     basketCount: basketIds.size
   };
 }
@@ -133,8 +120,14 @@ function generateReturnMail() {
     return;
   }
 
-  const { rows, consignmentCount, basketCount } =
-    parseReturnData(input);
+  let parsed;
+  try {
+    parsed = parseReturnData(input);
+  } catch (err) {
+    alert('Return data conflict: ' + err.message);
+    return;
+  }
+  const { rows, consignmentCount, basketCount } = parsed;
 
   if (!consignmentCount) {
     alert(
