@@ -117,3 +117,38 @@ html,body{max-width:100%;overflow-x:hidden}
   .cod-table td,.cod-table th{padding:9px 10px}
   .cod-table{font-size:12px}
 }
+
+/* Move COD between riders — compact, touch-friendly controls */
+.cod-transfer-section{border:1px solid #dce5f6}
+.cod-transfer-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:end}
+.cod-transfer-form label,.cod-edit-form label{display:flex;flex-direction:column;gap:7px;min-width:0;font-size:12px;font-weight:750;color:#596a84}
+.cod-transfer-form input,.cod-transfer-form select,.cod-edit-form input,.cod-edit-form select{width:100%;min-width:0;border:1px solid #dce4f2;border-radius:10px;background:#fff;color:#172442;min-height:46px;padding:10px 12px;font-size:16px}
+.cod-transfer-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap;grid-column:1/-1}
+.cod-transfer-actions button{min-height:45px}
+.cod-transfer-actions [hidden]{display:none!important}
+.cod-transfer-hint{font-size:12px;line-height:1.55;color:#64748b;background:#eff4ff;border:1px solid #dce6ff;border-radius:10px;padding:10px 12px;margin:14px 0}
+.cod-transfer-history{display:grid;gap:9px}
+.cod-transfer-item{display:flex;justify-content:space-between;align-items:center;gap:12px;min-width:0;padding:12px;background:#f8faff;border:1px solid #e1e8f3;border-radius:12px}
+.cod-transfer-detail{display:flex;flex-direction:column;gap:5px;min-width:0}
+.cod-transfer-detail strong{color:#203558;font-size:13px;overflow-wrap:anywhere}
+.cod-transfer-detail small{font-size:12px;color:#667791;overflow-wrap:anywhere}
+.cod-transfer-item-actions{display:flex;gap:7px;flex:0 0 auto}
+.cod-transfer-item-actions button{min-height:38px}
+.cod-edit-dialog{width:min(480px,calc(100vw - 24px));max-height:90dvh;overflow:auto;border:1px solid #e0e7f3;border-radius:18px;background:#fff;color:#172442;box-shadow:0 20px 70px #111e3540;padding:23px}
+.cod-edit-dialog::backdrop{background:#101d36a6}
+.cod-edit-form{display:grid;gap:15px}
+.cod-edit-form h2{font-size:20px;margin:0 0 3px}
+.cod-dialog-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:8px}
+.cod-dialog-actions button{min-height:44px}
+body.cod-locked #codTransferForm,body.cod-locked #codTransferHistory{pointer-events:none;opacity:.55}
+@media(max-width:650px){
+ .cod-transfer-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .cod-transfer-form label:nth-child(3),.cod-transfer-form label:nth-child(4){grid-column:1/-1}
+ .cod-transfer-form input,.cod-transfer-form select{font-size:16px;min-height:48px}
+ .cod-transfer-actions button{flex:1}
+ .cod-transfer-item{align-items:start;flex-direction:column;gap:10px}
+ .cod-transfer-item-actions{width:100%}
+ .cod-transfer-item-actions button{flex:1}
+ .cod-edit-dialog{padding:17px;border-radius:14px}
+ .cod-dialog-actions button{flex:1}
+}
