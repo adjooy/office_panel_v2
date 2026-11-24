@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>COD Collection · AD JOY PANEL</title>
+<link rel="stylesheet" href="../../assets/css/base.css">
+<link rel="stylesheet" href="cod-collection.css">
+<link rel="stylesheet" href="../../assets/css/panel-theme.css">
+</head><body><main class="page-content">
+<header class="page-head"><div><h1 class="page-title">COD Collection</h1>
+<p class="page-sub">Rider collection and payment-agent settlement · Offline daily ledger</p></div></header>
+<div class="cod-toolbar card"><label>Work Date<input id="codDate" type="date"></label>
+<button class="btn btn-light" id="codAddRider">+ Add Rider</button>
+<button class="btn btn-light" id="codExport">Export CSV</button>
+<button class="btn btn-light" id="codBackup">Backup JSON</button>
+<label class="btn btn-light cod-import">Restore JSON<input id="codRestore" type="file" accept="application/json,.json"></label>
+</div>
+<div class="cod-notice">Saved in this browser only. No real-time synchronization. Use Backup JSON regularly. Rider Due sent to KM Tracker represents a deduction from KM balance; send only once after reviewing.</div>
+<section class="cod-summary" aria-live="polite">
+<div class="card"><small>Panel COD</small><strong id="codTotal">৳0.00</strong></div>
+<div class="card"><small>Rider Collected</small><strong id="codCollected">৳0.00</strong></div>
+<div class="card"><small>Rider Due</small><strong id="codDue">৳0.00</strong></div>
+<div class="card"><small>Rider Overpaid</small><strong id="codOver">৳0.00</strong></div>
+<div class="card"><small>Paid to Agent</small><strong id="agentPaid">৳0.00</strong></div>
+<div class="card"><small>Agent Balance</small><strong id="agentBalance">৳0.00</strong></div>
+</section>
+<section class="card cod-section"><div class="cod-section-head"><h2>Rider Collections</h2><span>Cash and online installments</span></div>
+<div id="codRiders" class="cod-riders"></div></section>
+<section class="card cod-section"><div class="cod-section-head"><h2>Payment Agent Settlement</h2><span>Record each cash or online transfer</span></div>
+<form id="agentForm" class="cod-entry-form">
+<label>Method<select id="agentMethod"><option>Cash</option><option>bKash</option><option>Nagad</option><option>Rocket</option><option>Bank Transfer</option><option>Other</option></select></label>
+<label>Amount (BDT)<input id="agentAmount" type="number" min="0.01" step="0.01" required placeholder="0.00"></label>
+<label>Transaction / Reference<input id="agentReference" maxlength="140" placeholder="Optional for cash"></label>
+<button class="btn btn-primary" type="submit">+ Add Agent Payment</button></form>
+<div class="cod-table-scroll"><table class="cod-table"><thead><tr><th>Method</th><th>Amount</th><th>Reference</th><th>Action</th></tr></thead><tbody id="agentRows"></tbody></table></div>
+<p class="cod-foot" id="agentReconcile"></p>
+</section>
+<div id="codMessage" role="status" aria-live="polite" class="cod-message"></div>
+</main><script src="cod-collection.js"></script></body></html>
