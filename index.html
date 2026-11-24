@@ -79,6 +79,39 @@ html, body {
   background: var(--dash-bg) !important;
 }
 
+/* MOBILE BOTTOM SCREEN FIX */
+
+@media (max-width: 950px) {
+
+  #appRoot.app {
+    height: 100vh !important;
+    height: 100dvh !important;
+    box-sizing: border-box;
+  }
+
+  #appRoot .main {
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .ops-dashboard {
+    flex: 1 1 0;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)) !important;
+    box-sizing: border-box;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .viewer-frame {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    height: 0 !important;
+  }
+
+}
+
 
 /* =========================================================
    DESKTOP NAVIGATION
