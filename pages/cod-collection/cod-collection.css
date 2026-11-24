@@ -6,3 +6,114 @@ body.cod-locked #codRiders,body.cod-locked #agentForm,body.cod-locked #agentRows
 #codCloudStatus{display:block;color:#344d97;font-weight:800;margin-bottom:5px}
 #codMessage{white-space:pre-wrap}
 @media (max-width:520px){.cod-toolbar label:first-child{min-width:100%}}
+
+/* COD Collection · mobile-first overview and single-rider workspace */
+html,body{max-width:100%;overflow-x:hidden}
+.page-content{width:100%;max-width:1180px;margin:0 auto;padding:clamp(12px,2.5vw,26px) clamp(12px,2.5vw,24px) calc(66px + env(safe-area-inset-bottom,0px))}
+.cod-overview{margin:18px 0 22px}
+.cod-overview-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 13px}
+.cod-overview-heading h2{font-size:clamp(17px,2vw,21px);margin:0 0 4px;letter-spacing:-.4px}
+.cod-overview-heading p{margin:0;color:#75849b;font-size:12px;line-height:1.5}
+.cod-pill{display:inline-flex;align-items:center;padding:8px 12px;border-radius:999px;background:#eef2ff;color:#3e57b5;font-size:12px;font-weight:800;white-space:nowrap}
+.cod-pill-due{color:#b42318;background:#fff0ee}
+.cod-pill-over{color:#136b44;background:#e4f8ed}
+.cod-pill-ok{color:#176747;background:#e7f8ed}
+.cod-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0}
+.cod-summary .cod-stat{min-width:0;padding:18px;display:flex;flex-direction:column;align-items:start;position:relative;overflow:hidden;min-height:125px;background:#fff;border:1px solid #e1e8f3;border-radius:16px;box-shadow:0 5px 20px rgba(27,52,90,.055)}
+.cod-stat small{font-size:12px;line-height:1.35;font-weight:700;color:#64748b;min-height:30px;margin:0 0 9px}
+.cod-stat strong{display:block;color:#172442;font-size:clamp(18px,2.2vw,25px);font-variant-numeric:tabular-nums;line-height:1.1;font-weight:850;overflow-wrap:anywhere}
+.cod-stat em{font-size:11px;color:#a64739;font-style:normal;margin-top:8px}
+.cod-stat-icon{position:absolute;right:13px;top:12px;width:28px;height:28px;display:grid;place-items:center;border-radius:9px;background:#e9eeff;color:#526be3;font-weight:900}
+.cod-stat-total{border-left:4px solid #536dea!important}
+.cod-stat-cash{border-left:4px solid #0d9488!important}
+.cod-stat-online{border-left:4px solid #7c3aed!important}
+.cod-stat-due{border-left:4px solid #e04a55!important;background:#fff8f7!important}
+.cod-stat-due small,.cod-stat-due strong{color:#a62b36}
+.cod-stat-cash .cod-stat-icon{background:#e1faf2;color:#0d9488}
+.cod-stat-online .cod-stat-icon{background:#f0e9ff;color:#7c3aed}
+.cod-stat-due .cod-stat-icon{background:#ffe6e7;color:#c83743}
+.cod-stat-collected,.cod-stat-over,.cod-stat-agent{min-height:100px!important}
+.cod-reconcile-note{margin-top:11px;font-size:12px;font-weight:650;color:#7a5560;line-height:1.5}
+.cod-rider-section{padding:20px}
+.cod-select-row{display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:15px}
+.cod-select-row label{display:flex;flex-direction:column;gap:8px;min-width:min(100%,270px);flex:1;font-size:12px;font-weight:800;color:#52647f}
+.cod-select-row select{width:100%;font-size:16px;font-weight:650;color:#15264a;background:#f7f9ff;border:1.5px solid #ccd8f3;border-radius:12px;padding:13px 14px;min-height:48px}
+.cod-select-row .cod-pill{margin-bottom:7px}
+.cod-riders{display:block}
+.cod-rider-focus{padding:0;background:transparent;border:0;box-shadow:none}
+.cod-rider-head{padding-top:4px;margin-bottom:14px}
+.cod-rider-head h3{font-size:20px;color:#182747}
+.cod-rider-actions{justify-content:flex-start}
+.cod-rider-actions .cod-action{padding:10px 12px;font-weight:750;font-size:12px}
+.cod-rider-actions .cod-action:first-child{background:#ecf3ff;color:#3451a4;border-color:#d6e1ff}
+.cod-rider-fields{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.cod-rider-fields label{min-width:0}
+.cod-rider-fields input{min-height:44px}
+.cod-rider-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin-top:16px}
+.cod-rider-metric{min-width:0;border:1px solid #e2e8f5;border-radius:11px;background:#fff;padding:12px 10px}
+.cod-rider-metric span{display:block;font-size:11px;color:#6b7a91;margin-bottom:8px;font-weight:650}
+.cod-rider-metric strong{font-size:16px;line-height:1.2;color:#203456;font-weight:850;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.cod-rider-metric.cod-metric-due{border-color:#ffc4c4;background:#fff0ee}
+.cod-rider-metric.cod-metric-due span,.cod-rider-metric.cod-metric-due strong{color:#ad1d2d}
+.cod-rider-metric.cod-metric-over{border-color:#aeebd1;background:#ebfcf3}
+.cod-rider-metric.cod-metric-over span,.cod-rider-metric.cod-metric-over strong{color:#157348}
+.cod-rider-metric.cod-metric-ok{background:#edfbf1;border-color:#bdecc9}
+.cod-due-explainer{background:#fff4f1;color:#9e3a30;padding:12px;border-radius:10px;font-size:12px;font-weight:650;line-height:1.55;margin:11px 0 17px}
+.cod-due-explainer.cod-paid-note{background:#edf9f2;color:#137248}
+.cod-subtitle{font-size:14px;color:#233657;margin:20px 0 10px}
+.cod-rider .cod-entry-form{grid-template-columns:1fr 1fr 1.3fr auto}
+.cod-table-scroll{max-width:100%;overflow-x:auto}
+.cod-table{width:100%;min-width:420px}
+.cod-notice{padding:11px 13px;line-height:1.55}
+.cod-toolbar{gap:8px;padding:12px}
+.cod-toolbar .btn,.cod-toolbar .cod-import{font-size:12px;min-height:40px;white-space:normal}
+.cod-toolbar label:first-child{min-width:160px}
+.cod-toolbar input[type=date]{font-size:15px;min-height:40px}
+@media(max-width:900px){
+  .cod-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cod-rider-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .cod-rider-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cod-rider-fields label:last-child{grid-column:1/-1}
+}
+@media(max-width:600px){
+  .page-content{padding:12px 10px calc(78px + env(safe-area-inset-bottom,0px))}
+  .page-head{margin:0 0 10px}
+  .page-title{font-size:24px}
+  .page-sub{font-size:12px;line-height:1.45}
+  .cod-toolbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:11px;margin-bottom:10px}
+  .cod-toolbar label:first-child{grid-column:1/-1;min-width:0}
+  .cod-toolbar .btn,.cod-toolbar .cod-import{display:flex;justify-content:center;align-items:center;min-width:0;text-align:center;font-size:11.5px;padding:9px 7px}
+  .cod-notice{margin:10px 0 17px;font-size:11px}
+  .cod-overview{margin:14px 0 17px}
+  .cod-overview-heading h2{font-size:17px}
+  .cod-overview-heading p{font-size:11px}
+  .cod-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .cod-summary .cod-stat{min-height:101px;padding:13px 10px;border-radius:12px}
+  .cod-stat small{font-size:11px;margin:0 0 7px;min-height:27px;padding-right:10px}
+  .cod-stat strong{font-size:clamp(17px,5vw,23px);line-height:1.2;letter-spacing:-.5px}
+  .cod-stat-icon{width:23px;height:23px;right:8px;top:8px;font-size:12px;opacity:.7}
+  .cod-stat-collected,.cod-stat-over,.cod-stat-agent{min-height:90px!important}
+  .cod-reconcile-note{font-size:11px}
+  .cod-section{padding:12px;margin-bottom:13px}
+  .cod-section-head h2{font-size:17px}
+  .cod-section-head span{font-size:11px}
+  .cod-select-row{display:block}
+  .cod-select-row label{width:100%;min-width:0}
+  .cod-select-row select{min-height:49px}
+  .cod-select-row .cod-pill{margin:10px 0 0}
+  .cod-rider-head h3{font-size:17px}
+  .cod-rider-actions{width:100%}
+  .cod-rider-actions .cod-action{flex:1;min-height:38px;font-size:11px;padding:8px}
+  .cod-rider-fields{grid-template-columns:1fr;gap:10px}
+  .cod-rider-fields label:last-child{grid-column:auto}
+  .cod-rider-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .cod-rider-metric{padding:10px 9px}
+  .cod-rider-metric strong{font-size:16px}
+  .cod-rider-metric.cod-metric-due,.cod-rider-metric.cod-metric-over,.cod-rider-metric.cod-metric-ok{grid-column:1/-1}
+  .cod-rider .cod-entry-form,#agentForm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .cod-rider .cod-entry-form label:nth-child(3),#agentForm label:nth-child(3){grid-column:1/-1}
+  .cod-rider .cod-entry-form button,#agentForm button{grid-column:1/-1;min-height:46px}
+  .cod-entry-form input,.cod-entry-form select{font-size:16px}
+  .cod-table td,.cod-table th{padding:9px 10px}
+  .cod-table{font-size:12px}
+}
