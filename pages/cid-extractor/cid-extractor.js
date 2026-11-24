@@ -8,7 +8,7 @@
 /* TRACKING SHEET WEB APP URL */
 
 const TRACKING_UPLOAD_URL =
-  'PASTE_YOUR_TRACKING_WEB_APP_URL_HERE';
+  'https://script.google.com/macros/s/AKfycbwI3t_4skwtWpGNm6WnMKQuB4fzCRjuSV9M_GBuzfPlMr88QWTz3Hz10zGGE6V8fMYW/exec';
 
 
 /* =========================================================
