@@ -161,6 +161,28 @@ function handleFile(file) {
       resetBtn.style.display = 'inline-block';
 
       buildMapping();
+
+      // Aggregate snapshot derived only from the locally imported CSV.
+      // This is not realtime and stores no customer details.
+      try {
+        const counters = { total: rawRows.length, delivered: 0, hold: 0, return: 0, other: 0 };
+        for (const item of rawRows) {
+          const flags = guessRule(item['Order Status']);
+          if (flags.exchange || flags.rto) counters.return++;
+          else if (flags.hold) counters.hold++;
+          else if (flags.delivered) counters.delivered++;
+          else counters.other++;
+        }
+        localStorage.setItem('opsLatestParcelSnapshot', JSON.stringify({
+          version: 1,
+          importedAt: new Date().toISOString(),
+          fileName: String(file.name).slice(0, 120),
+          ...counters
+        }));
+      } catch (err) {
+        console.warn('Could not save dashboard CSV snapshot:', err);
+      }
+
       render();
     },
 
