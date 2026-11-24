@@ -611,6 +611,7 @@ const Auth = (() => {
       if(label) label.textContent = user.displayName ? `${user.displayName} · ${user.email}` : user.email;
       await DataStore.load();
       PinSystem.resetSession();
+      await importCODDueFromSession();
     } else {
       DataStore.stop();
       PinSystem.resetSession();
@@ -1883,6 +1884,95 @@ document.getElementById('reportMonth').value = todayISO().slice(0,7);
 document.getElementById('reportDay').value = todayISO();
 document.getElementById('fMonth').value = '';
 document.getElementById('siteCredit').textContent = creditLine();
+
+/* COD Collection → KM ledger handoff.
+   The COD outstanding is a *deduction*, not KM earnings. The operator
+   reviews and confirms the accounting adjustment before committing.
+   Stored source IDs prevent double-posting across refreshes/devices. */
+async function importCODDueFromSession() {
+  const key = 'adjoy:cod-km-handoff:v1';
+  let payload;
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return;
+    payload = JSON.parse(raw);
+  } catch (err) {
+    alert('COD transfer could not be read. Please retry from COD Collection.');
+    return;
+  }
+  if (!payload || payload.version !== 1 ||
+      typeof payload.sourceId !== 'string' ||
+      !/^cod-\\d{4}-\\d{2}-\\d{2}-[a-z0-9-]+$/i.test(payload.sourceId) ||
+      !/^\\d{4}-\\d{2}-\\d{2}$/.test(payload.date) ||
+      !Number.isSafeInteger(payload.amountCents) || payload.amountCents <= 0 ||
+      typeof payload.riderName !== 'string' || !payload.riderName.trim()) {
+    sessionStorage.removeItem(key);
+    alert('Invalid COD transfer. No KM changes made.');
+    return;
+  }
+
+  const entries = DataStore.state.entries;
+  if (entries.some(e => e.codSourceId === payload.sourceId)) {
+    sessionStorage.removeItem(key);
+    try {
+      const ack = JSON.parse(localStorage.getItem('adjoy:cod-km-sent:v1') || '{}');
+      ack[payload.sourceId] = true;
+      localStorage.setItem('adjoy:cod-km-sent:v1', JSON.stringify(ack));
+    } catch (err) {}
+    alert('This COD Due was already recorded in KM Tracker. No duplicate was added.');
+    return;
+  }
+
+  const normalized = x => x.trim().toLocaleLowerCase().replace(/\\s+/g, ' ');
+  const matches = DataStore.state.riders.filter(
+    r => normalized(r.name) === normalized(payload.riderName)
+  );
+  if (matches.length !== 1) {
+    alert('COD Due transfer not completed: Rider "' +
+      payload.riderName +
+      '" must exist with the same name in KM Tracker. Add or rename that rider, then reopen KM Tracker to retry.');
+    return;
+  }
+
+  const rider = matches[0];
+  const amount = payload.amountCents / 100;
+  if (!confirm(
+    'Record COD outstanding BDT ' + amount.toFixed(2) +
+    ' for ' + rider.name + ' on ' + payload.date +
+    ' as a DEDUCTION from the KM balance?\\n\\n' +
+    'This does not reduce COD Sheet Due automatically, and future COD payments do not update this deduction. Verify before confirming.'
+  )) return;
+
+  const now = new Date().toISOString();
+  const record = {
+    id: DataStore.id('entry'),
+    riderId: rider.id,
+    date: payload.date,
+    type: 'deduction',
+    km: 0, rate: 0, total: 0, paid: 0,
+    pending: -amount, adjustment: -amount,
+    note: 'COD outstanding from COD Collection (' + payload.date + ')',
+    codSourceId: payload.sourceId,
+    createdAt: now
+  };
+  DataStore.state.entries.push(record);
+  DataStore.log('COD due imported for ' + rider.name + ': BDT ' + amount.toFixed(2));
+  try {
+    await DataStore.persist();
+    sessionStorage.removeItem(key);
+    try {
+      const ack = JSON.parse(localStorage.getItem('adjoy:cod-km-sent:v1') || '{}');
+      ack[payload.sourceId] = true;
+      localStorage.setItem('adjoy:cod-km-sent:v1', JSON.stringify(ack));
+    } catch (err) {}
+    App.renderAll();
+    alert('COD Due recorded as KM deduction: BDT ' + amount.toFixed(2) + ' for ' + rider.name + '.');
+  } catch (err) {
+    // DataStore.persist restores state on failure. Do not mark transferred;
+    // the user can retry after resolving the Firestore error.
+    console.error('COD Due import failed', err);
+  }
+}
 
 /* DataStore.load() is now triggered automatically by Auth.onAuthStateChanged
    once the user is signed in — see the Auth module above. */
