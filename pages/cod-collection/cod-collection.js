@@ -301,56 +301,66 @@ function selectOptions(select,items){
   if(items.some(r=>r.id===old))select.value=old;
 }
 function renderTransferUI(d){
-  const from=x('codTransferFrom'),to=x('codTransferTo');
-  const prevFrom=from.value,prevTo=to.value;
-  selectOptions(from,d.riders);selectOptions(to,d.riders);
-  if(editingTransferId && editingTransferDate!==today())resetTransferEditor();
-  if(editingTransferId){
-    const t=transfersOf(d).find(z=>z.id===editingTransferId);
-    if(!t)resetTransferEditor();
-    else {from.value=t.fromId;to.value=t.toId;}
-  }else{
-    if(d.riders.some(r=>r.id===selectedRiderId))from.value=selectedRiderId;
-    else if(d.riders.some(r=>r.id===prevFrom))from.value=prevFrom;
-    if(d.riders.some(r=>r.id===prevTo) && prevTo!==from.value)to.value=prevTo;
-    else to.value=d.riders.find(r=>r.id!==from.value)?.id||'';
+  const from=x('codTransferFrom'), to=x('codTransferTo');
+  const riderId=selectedRiderId;
+  const rider=d.riders.find(r=>r.id===riderId);
+  // Sender is ALWAYS the selected rider. Only recipients can be chosen.
+  selectOptions(from,d.riders);
+  from.value=riderId||'';
+  const previousRecipient=to.value;
+  selectOptions(to,d.riders.filter(r=>r.id!==riderId));
+  if(d.riders.some(r=>r.id===previousRecipient&&r.id!==riderId))to.value=previousRecipient;
+  if(editingTransferId && (editingTransferDate!==today() ||
+      !transfersOf(d).some(t=>t.id===editingTransferId&&t.fromId===riderId))) {
+    resetTransferEditor();
   }
-  from.disabled=d.riders.length<2;
-  to.disabled=d.riders.length<2;
-  x('codTransferSubmit').disabled=d.riders.length<2;
+  if(editingTransferId){
+    const t=transfersOf(d).find(t=>t.id===editingTransferId);
+    if(t){to.value=t.toId;from.value=t.fromId;}
+  }
+  x('codTransferSubmit').disabled=!rider||d.riders.length<2;
+  to.disabled=!rider||d.riders.length<2;
   const panel=x('codTransferHistory');
   panel.replaceChildren();
-  if(!transfersOf(d).length){
-    panel.append(el('p','cod-empty','No parcel COD transfers for this date.'));
-  }
+  if(!rider)return;
+  // Show transactions relevant to this rider only; editing stays with sender.
+  const related=transfersOf(d).filter(t=>t.fromId===riderId||t.toId===riderId);
+  if(!related.length)panel.append(el('p','cod-empty','No COD transfers for this rider yet.'));
   const names=new Map(d.riders.map(r=>[r.id,r.name]));
-  for(const t of transfersOf(d).slice().reverse()){
+  for(const t of related.slice().reverse()){
+    const outgoing=t.fromId===riderId;
     const card=el('div','cod-transfer-item');
     const detail=el('div','cod-transfer-detail');
     detail.append(
-      el('strong','',money(t.amount)+' · '+(names.get(t.fromId)||'Unknown')+' → '+(names.get(t.toId)||'Unknown')),
+      el('strong','', (outgoing?'Sent ':'Received ')+money(t.amount)+' · '+
+        (outgoing?'To '+(names.get(t.toId)||'Unknown'):'From '+(names.get(t.fromId)||'Unknown'))),
       el('small','',t.reference)
     );
     const actions=el('div','cod-transfer-item-actions');
-    actions.append(button('Edit',()=>{
-      if(!ensureReady())return;
-      editingTransferId=t.id;editingTransferDate=today();
-      from.value=t.fromId;to.value=t.toId;
-      x('codTransferAmount').value=centsToInput(t.amount);
-      x('codTransferRef').value=t.reference;
-      x('codTransferSubmit').textContent='Update Transfer';
-      x('codTransferCancel').hidden=false;
-      x('codTransferForm').scrollIntoView({behavior:'smooth',block:'center'});
-    }));
-    actions.append(button('Remove',()=>{
-      if(!ensureReady())return;
-      if(!confirm('Remove transfer '+money(t.amount)+' ('+t.reference+')?'))return;
-      const candidate=clone(d);candidate.transfers=transfersOf(d).filter(z=>z.id!==t.id);
-      if(candidate.riders.some(r=>effectiveCOD(candidate,r.id)<0))
-        return alert('Cannot remove this transfer: another rider has already transferred some of its COD onward. Reverse or edit later transfers first.');
-      d.transfers=candidate.transfers;
-      resetTransferEditor();persist();render();
-    },'cod-danger'));
+    if(outgoing){
+      actions.append(button('Edit',()=>{
+        if(!ensureReady())return;
+        editingTransferId=t.id;editingTransferDate=today();
+        from.value=riderId;to.value=t.toId;
+        x('codTransferAmount').value=centsToInput(t.amount);
+        x('codTransferRef').value=t.reference;
+        x('codTransferSubmit').textContent='Update Transfer';
+        x('codTransferCancel').hidden=false;
+        x('codTransferForm').scrollIntoView({behavior:'smooth',block:'center'});
+      }));
+      actions.append(button('Remove',()=>{
+        if(!ensureReady())return;
+        if(!confirm('Remove transfer '+money(t.amount)+' ('+t.reference+')?'))return;
+        const candidate=clone(d);
+        candidate.transfers=transfersOf(d).filter(z=>z.id!==t.id);
+        if(candidate.riders.some(r=>effectiveCOD(candidate,r.id)<0))
+          return alert('Cannot remove: a rider has already transferred some of this COD onward. Edit later transfers first.');
+        d.transfers=candidate.transfers;
+        resetTransferEditor();persist();render();
+      },'cod-danger'));
+    } else {
+      actions.append(el('small','cod-transfer-incoming','To edit, select the sender'));
+    }
     card.append(detail,actions);panel.append(card);
   }
 }
@@ -358,7 +368,7 @@ x('codTransferForm').addEventListener('submit',e=>{
   e.preventDefault();
   if(!ensureReady())return;
   const d=current(),amount=parseMoney(x('codTransferAmount').value);
-  const fromId=x('codTransferFrom').value,toId=x('codTransferTo').value;
+  const fromId=selectedRiderId,toId=x('codTransferTo').value;
   const reference=x('codTransferRef').value.trim().slice(0,120);
   const id=editingTransferId||uid();
   if(editingTransferId && editingTransferDate!==today())
@@ -506,6 +516,9 @@ function render(){
     if(r.sent)card.append(el('small','cod-memo',
       'This rider/date already has a COD Due transfer to KM Tracker. Changes here do not adjust that deduction automatically.'));
 
+    // Keep the transfer section inside the selected rider, directly
+    // above Payment History. Reuse the same node to preserve form handlers.
+    card.append(x('codTransferPanel'));
     const sub=el('h4','cod-subtitle','Payment History');
     card.append(sub,table(r.payments,id=>{
       if(!confirm('Remove this payment?'))return;
@@ -537,6 +550,7 @@ function render(){
   }
 }
 x('codRiderSelect').addEventListener('change',e=>{
+  if(editingTransferId)resetTransferEditor();
   selectedRiderId=e.target.value;render();
 });
 
