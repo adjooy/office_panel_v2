@@ -59,7 +59,7 @@ function parseReturnData(text) {
 
     for (const token of tokens) {
       // Consignment ID starts with R.
-      if (/^R[A-Z0-9]{8,}$/.test(token)) {
+      if (/^[FRCE](?=[A-Z0-9]{10}$)(?=[A-Z0-9]*\d)[A-Z0-9]{10}$/.test(token)) {
         saveCurrent();
         current.consignment = token;
         consignmentIds.add(token);
@@ -138,7 +138,7 @@ function generateReturnMail() {
 
   if (!consignmentCount) {
     alert(
-      'No valid consignment ID found. Consignment IDs must start with R.'
+      'No valid consignment ID found. Check the extracted CID/RID list.'
     );
     return;
   }
@@ -351,3 +351,39 @@ returnDate.addEventListener('input', resetReturnMail);
 copyReturnBtn.textContent = 'Copy Mail';
 openReturnBtn.textContent = 'Open Mail';
 resetReturnMail();
+
+/* AUTO-IMPORT FROM CID EXTRACTOR; NEVER SEND EMAIL AUTOMATICALLY */
+function importReturnMailHandoff() {
+  const key = 'adjoy:return-mail-transfer:v1';
+  let raw = null;
+  try {
+    raw = sessionStorage.getItem(key);
+    if (!raw) return;
+    // Consume once so refreshing does not overwrite manual edits.
+    sessionStorage.removeItem(key);
+
+    const payload = JSON.parse(raw);
+    if (payload.version !== 1 ||
+        !/^\\d{4}-\\d{2}-\\d{2}$/.test(payload.date) ||
+        typeof payload.text !== 'string' ||
+        payload.text.length > 200000 ||
+        !payload.text.trim()) {
+      throw new Error('Invalid transfer payload');
+    }
+
+    returnDate.value = payload.date;
+    returnInput.value = payload.text;
+
+    const hint = document.getElementById('returnDataHint');
+    if (hint) {
+      hint.textContent =
+        'Imported from CID Extractor. Review the IDs and mail preview before sending.';
+    }
+
+    generateReturnMail();
+  } catch (err) {
+    console.warn('Return Mail transfer could not be loaded:', err);
+  }
+}
+
+importReturnMailHandoff();
