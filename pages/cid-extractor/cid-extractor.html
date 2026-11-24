@@ -10,192 +10,6 @@
 <link rel="stylesheet" href="../../assets/css/base.css">
 <link rel="stylesheet" href="cid-extractor.css">
 
-<style>
-
-.cid-card {
-  width: 100%;
-  max-width: none;
-  box-sizing: border-box;
-}
-
-.cid-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  align-items: start;
-}
-
-.cid-left,
-.cid-right {
-  min-width: 0;
-}
-
-.cid-layout .cid-textarea,
-.cid-layout .cid-output {
-  display: block;
-  width: 100%;
-  height: 420px;
-  min-height: 420px;
-  margin: 0;
-  box-sizing: border-box;
-  resize: vertical;
-}
-
-.cid-layout .cid-info {
-  min-height: 44px;
-  margin-bottom: 12px;
-}
-
-.cid-layout .form-title {
-  margin-bottom: 8px;
-}
-
-.cid-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.cid-copy {
-  width: 100%;
-  justify-content: center;
-  text-align: center;
-}
-
-.tracking-upload {
-  border-top: 1px solid #d1d5db;
-  margin-top: 24px;
-  padding-top: 20px;
-}
-
-.tracking-title {
-  font-size: 17px;
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-
-.tracking-description {
-  font-size: 13px;
-  opacity: .7;
-  margin-bottom: 16px;
-}
-
-.tracking-controls {
-  display: flex;
-  align-items: end;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.tracking-date-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.tracking-date-wrap label {
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.tracking-date {
-  padding: 11px 14px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-}
-
-.tracking-btn {
-  border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.tracking-yesterday {
-  background: #2563eb;
-}
-
-.tracking-morning {
-  background: #15803d;
-}
-
-.tracking-btn:hover {
-  filter: brightness(.92);
-}
-
-.tracking-btn:disabled {
-  opacity: .55;
-  cursor: not-allowed;
-}
-
-.tracking-msg {
-  display: none;
-  padding: 12px 14px;
-  margin-top: 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  line-height: 1.6;
-  overflow-wrap: anywhere;
-}
-
-.tracking-msg.success {
-  display: block;
-  background: #dcfce7;
-  color: #166534;
-}
-
-.tracking-msg.error {
-  display: block;
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.tracking-msg.info {
-  display: block;
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-@media (max-width: 768px) {
-
-  .cid-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .cid-layout .cid-textarea,
-  .cid-layout .cid-output {
-    height: 300px;
-    min-height: 300px;
-  }
-
-  .cid-layout .cid-info {
-    min-height: auto;
-  }
-
-  .tracking-controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .tracking-date {
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .tracking-btn {
-    width: 100%;
-  }
-
-}
-
-</style>
 </head>
 
 <body>
@@ -224,8 +38,7 @@
 
     <div class="cid-layout">
 
-
-      <!-- LEFT SIDE -->
+      <!-- LEFT SIDE: RANDOM TEXT -->
 
       <div class="cid-left">
 
@@ -272,7 +85,7 @@
       </div>
 
 
-      <!-- RIGHT SIDE -->
+      <!-- RIGHT SIDE: EXTRACTED CID -->
 
       <div class="cid-right">
 
@@ -281,15 +94,14 @@
         </div>
 
         <div class="cid-info">
-          All unique Consignment IDs will appear here.
-          Copy or upload directly to Tracking Sheet.
+          Unique CID results
         </div>
 
         <textarea
           id="cidOutput"
           class="cid-output"
           readonly
-          placeholder="Extracted CID list will appear here..."
+          placeholder="CID results..."
         ></textarea>
 
         <div class="cid-actions">
@@ -308,7 +120,7 @@
     </div>
 
 
-    <!-- TRACKING SHEET UPLOAD -->
+    <!-- TRACKING SHEET AUTOMATION -->
 
     <div class="tracking-upload">
 
