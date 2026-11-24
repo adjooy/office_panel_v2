@@ -364,7 +364,7 @@ function importReturnMailHandoff() {
 
     const payload = JSON.parse(raw);
     if (payload.version !== 1 ||
-        !/^\\d{4}-\\d{2}-\\d{2}$/.test(payload.date) ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(payload.date) ||
         typeof payload.text !== 'string' ||
         payload.text.length > 200000 ||
         !payload.text.trim()) {
