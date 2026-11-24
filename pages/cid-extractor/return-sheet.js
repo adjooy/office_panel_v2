@@ -15,6 +15,7 @@
   const dateInput = el('returnDate');
   const extractBtn = el('extractReturnBtn');
   const uploadBtn = el('uploadReturnBtn');
+  const mailBtn = el('openReturnMailBtn');
 
   dateInput.value = getBangladeshDate();
 
@@ -113,6 +114,9 @@
 
     uploadBtn.disabled =
       uploading || totalRows === 0;
+
+    mailBtn.disabled = uploading ||
+      !returnData.cids.length || !returnData.baskets.length;
 
   }
 
@@ -298,6 +302,7 @@
     uploading = true;
 
     uploadBtn.disabled = true;
+    mailBtn.disabled = true;
     extractBtn.disabled = true;
     dateInput.disabled = true;
     input.readOnly = true;
@@ -400,6 +405,90 @@
   }
 
 
+
+  /* HANDOFF TO EXISTING RETURN MAIL PANEL */
+  async function openReturnMailWithData() {
+
+    if (uploading) return;
+
+    // Always use the latest pasted data, even if the user forgot Extract.
+    extractReturnData();
+
+    if (!returnData.cids.length || !returnData.baskets.length) {
+      setReturnMsg(
+        'Return Mail requires at least one Consignment ID and one Basket ID.',
+        'error'
+      );
+      return;
+    }
+
+    // The existing mail table has a consignment per row. Never silently
+    // discard baskets or runs that would not fit in those rows.
+    if (returnData.baskets.length > returnData.cids.length ||
+        returnData.runs.length > returnData.cids.length) {
+      setReturnMsg(
+        'Basket/Run count exceeds Consignment count. Review your pasted data before opening Return Mail.',
+        'error'
+      );
+      return;
+    }
+
+    const date = dateInput.value;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      setReturnMsg('Please select a valid Return Mail date.', 'error');
+      return;
+    }
+
+    // Option B: list every consignment once; list each Basket/Run once.
+    const mailText = returnData.cids.map((cid, i) =>
+      [cid, returnData.baskets[i] || '', returnData.runs[i] || ''].join('\t')
+    ).join('\n');
+
+    // Both panels share the same origin and tab (the dashboard iframe).
+    // Session storage is a reliable handoff even when clipboard permission
+    // is unavailable inside an iframe.
+    try {
+      sessionStorage.setItem('adjoy:return-mail-transfer:v1',
+        JSON.stringify({
+          version: 1,
+          date,
+          text: mailText,
+          createdAt: Date.now()
+        })
+      );
+    } catch (err) {
+      setReturnMsg(
+        'Cannot transfer data: browser session storage is unavailable.',
+        'error'
+      );
+      return;
+    }
+
+    // Best-effort copy; navigation and auto-fill do not depend on it.
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(mailText);
+      }
+    } catch (err) {
+      // Clipboard restrictions are common inside embedded pages.
+    }
+
+    const destination = '../return-mail/return-mail.html';
+    const panelRoute = '#page=' +
+      encodeURIComponent('pages/return-mail/return-mail.html');
+
+    try {
+      if (window.parent !== window &&
+          window.parent.location.origin === window.location.origin) {
+        window.parent.location.hash = panelRoute;
+      } else {
+        window.location.assign(destination);
+      }
+    } catch (err) {
+      window.location.assign(destination);
+    }
+  }
+
   /* BUTTON EVENTS */
 
   extractBtn.addEventListener(
@@ -410,6 +499,11 @@
   uploadBtn.addEventListener(
     'click',
     uploadReturnData
+  );
+
+  mailBtn.addEventListener(
+    'click',
+    openReturnMailWithData
   );
 
   el('clearCidBtn').addEventListener(
