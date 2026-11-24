@@ -7,7 +7,7 @@
 (() => {
 
   const RETURN_UPLOAD_URL =
-    'PASTE_YOUR_RETURN_WEB_APP_URL';
+    'https://script.google.com/macros/s/AKfycbxY7l21PTMOo5PAOU3wLS7vXLqg24KExHvxtDUBEhfPK-LpnrcNndClr6eCqI1lKpSshw/exec';
 
   const el = id => document.getElementById(id);
 
