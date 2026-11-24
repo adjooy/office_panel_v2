@@ -473,7 +473,7 @@ function render(){
     top.append(actions);card.append(top);
 
     const fields=el('div','cod-rider-fields');
-    fields.append(field('Panel COD (BDT)',centsToInput(r.cod),(v,inp)=>{
+    fields.append(field('Original Panel COD (BDT)',centsToInput(r.cod),(v,inp)=>{
       const n=parseMoney(v);
       if(n===null){alert('Invalid amount');inp.value=centsToInput(r.cod);return;}
       if(n!==r.cod && n<0){alert('Invalid COD amount');return;}
@@ -486,7 +486,7 @@ function render(){
 
     const metrics=el('div','cod-rider-metrics');
     for(const [name,val,extra] of [
-      ['Panel COD',riderCOD,''],
+      ['Adjusted COD',riderCOD,''],
       ['Cash',paidCash,''],
       ['Online',paidOnline,''],
       ['Total Paid',paid,''],
