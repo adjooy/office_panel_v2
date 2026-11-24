@@ -1,11 +1,8 @@
 
 /* =========================================================
    AD JOY PANEL
-   CID EXTRACTOR
+   CID EXTRACTOR & SHEET AUTOMATION
 ========================================================= */
-
-
-/* MAIN CARD */
 
 .cid-card {
   padding: 20px;
@@ -13,11 +10,6 @@
   max-width: none;
   box-sizing: border-box;
 }
-
-
-/* =========================================================
-   TWO COLUMN LAYOUT
-========================================================= */
 
 .cid-layout {
   display: grid;
@@ -37,11 +29,8 @@
   margin-bottom: 8px;
 }
 
-
-/* INFORMATION TEXT */
-
 .cid-info {
-  color: var(--muted);
+  color: var(--muted, #64748b);
   font-size: 12px;
   line-height: 1.6;
   margin-bottom: 12px;
@@ -50,9 +39,7 @@
 }
 
 
-/* =========================================================
-   RANDOM TEXT INPUT
-========================================================= */
+/* TEXT INPUT */
 
 .cid-textarea {
   display: block;
@@ -60,14 +47,14 @@
   height: 420px;
   min-height: 420px;
   resize: vertical;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border, #d1d5db);
   background: #fafbfc;
   border-radius: 10px;
   padding: 12px;
   margin: 0;
   outline: none;
   box-sizing: border-box;
-  font-family: var(--mono);
+  font-family: var(--mono, monospace);
   font-size: 12px;
   line-height: 1.55;
 }
@@ -79,9 +66,7 @@
 }
 
 
-/* =========================================================
-   EXTRACTED CID OUTPUT
-========================================================= */
+/* CID OUTPUT */
 
 .cid-output {
   display: block;
@@ -96,7 +81,7 @@
   padding: 12px;
   outline: none;
   box-sizing: border-box;
-  font-family: var(--mono);
+  font-family: var(--mono, monospace);
   font-size: 13px;
   line-height: 1.65;
   color: #172033;
@@ -109,9 +94,7 @@
 }
 
 
-/* =========================================================
-   EXTRACT, CLEAR AND COPY BUTTONS
-========================================================= */
+/* CID ACTION BUTTONS */
 
 .cid-actions {
   display: flex;
@@ -122,7 +105,7 @@
 }
 
 .cid-count {
-  color: var(--muted);
+  color: var(--muted, #64748b);
   font-size: 12px;
 }
 
@@ -142,9 +125,7 @@
 }
 
 
-/* =========================================================
-   TRACKING SHEET UPLOAD SECTION
-========================================================= */
+/* SHEET AUTOMATION SECTIONS */
 
 .tracking-upload {
   border-top: 1px solid var(--border, #d1d5db);
@@ -159,14 +140,11 @@
 }
 
 .tracking-description {
-  color: var(--muted);
+  color: var(--muted, #64748b);
   font-size: 13px;
   line-height: 1.6;
   margin-bottom: 16px;
 }
-
-
-/* TRACKING CONTROLS */
 
 .tracking-controls {
   display: flex;
@@ -199,6 +177,7 @@
   outline: none;
   box-sizing: border-box;
   cursor: pointer;
+  min-width: 0;
 }
 
 .tracking-date:focus {
@@ -207,9 +186,7 @@
 }
 
 
-/* =========================================================
-   TRACKING UPLOAD BUTTONS
-========================================================= */
+/* UPLOAD BUTTONS */
 
 .tracking-btn {
   border: none;
@@ -223,9 +200,6 @@
   transition: background .15s, opacity .15s;
 }
 
-
-/* YESTERDAY HOLD BUTTON */
-
 .tracking-yesterday {
   background: #2563eb;
 }
@@ -233,9 +207,6 @@
 .tracking-yesterday:hover {
   background: #1d4ed8;
 }
-
-
-/* MORNING RECEIVED BUTTON */
 
 .tracking-morning {
   background: #15803d;
@@ -245,18 +216,22 @@
   background: #166534;
 }
 
+.return-extract {
+  background: #4f46e5;
+}
 
-/* DISABLED BUTTON */
+.return-extract:hover {
+  background: #4338ca;
+}
 
-.tracking-btn:disabled {
+.tracking-btn:disabled,
+.cid-actions button:disabled {
   opacity: .55;
   cursor: not-allowed;
 }
 
 
-/* =========================================================
-   UPLOAD STATUS MESSAGES
-========================================================= */
+/* STATUS MESSAGES */
 
 .tracking-msg {
   display: none;
@@ -268,26 +243,17 @@
   overflow-wrap: anywhere;
 }
 
-
-/* SUCCESS MESSAGE */
-
 .tracking-msg.success {
   display: block;
   background: #dcfce7;
   color: #166534;
 }
 
-
-/* ERROR MESSAGE */
-
 .tracking-msg.error {
   display: block;
   background: #fee2e2;
   color: #991b1b;
 }
-
-
-/* UPLOADING MESSAGE */
 
 .tracking-msg.info {
   display: block;
@@ -296,9 +262,74 @@
 }
 
 
-/* =========================================================
-   TABLET RESPONSIVE
-========================================================= */
+/* RETURN DATA STATISTICS */
+
+.return-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.return-stats > div {
+  background: #f4f7fc;
+  border: 1px solid #e1e7ef;
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.return-stats strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 26px;
+  color: #172442;
+}
+
+
+/* RETURN DATA TABLE */
+
+.return-table-wrap {
+  width: 100%;
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid #e1e7ef;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
+.return-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: center;
+}
+
+.return-table th {
+  position: sticky;
+  top: 0;
+  background: #f1f5f9;
+  color: #172442;
+  padding: 12px;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.return-table td {
+  padding: 10px;
+  border-top: 1px solid #e5e7eb;
+  white-space: nowrap;
+  font-family: var(--mono, monospace);
+}
+
+.return-table tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+
+/* TABLET RESPONSIVE */
 
 @media (max-width: 768px) {
 
@@ -325,9 +356,7 @@
 }
 
 
-/* =========================================================
-   MOBILE RESPONSIVE
-========================================================= */
+/* MOBILE RESPONSIVE */
 
 @media (max-width: 520px) {
 
@@ -336,7 +365,7 @@
   }
 
   .cid-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 20px;
   }
 
@@ -347,6 +376,7 @@
   .cid-textarea {
     height: 300px;
     min-height: 300px;
+    font-size: 16px;
   }
 
   .cid-output {
@@ -365,13 +395,38 @@
 
   .tracking-date {
     width: 100%;
+    font-size: 16px;
   }
 
   .tracking-btn {
     width: 100%;
+    min-height: 44px;
+  }
+
+  .return-stats {
+    gap: 6px;
+  }
+
+  .return-stats > div {
+    padding: 10px 5px;
+    font-size: 11px;
+  }
+
+  .return-stats strong {
+    font-size: 22px;
+  }
+
+  .return-table {
+    font-size: 11px;
+  }
+
+  .return-table th,
+  .return-table td {
+    padding: 9px 6px;
   }
 
 }
+
 
 /* MOBILE BOTTOM PADDING & SCROLL FIX */
 
@@ -388,7 +443,16 @@
     min-height: 100%;
     overflow-y: visible !important;
     overflow-x: hidden !important;
-    padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(
+      40px + env(safe-area-inset-bottom, 0px)
+    ) !important;
+    box-sizing: border-box;
+  }
+
+  .page-content {
+    height: auto !important;
+    min-height: 0 !important;
+    padding-bottom: 50px !important;
     box-sizing: border-box;
   }
 
