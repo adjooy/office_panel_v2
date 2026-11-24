@@ -123,7 +123,40 @@ function handleFile(file) {
         return;
       }
 
-      rawRows = rows;
+      // One consignment is one parcel. Exact duplicates from a CSV
+      // export are removed; conflicting copies must be resolved by
+      // re-exporting, rather than arbitrarily choosing a status/amount.
+      const seen = new Map();
+      const cleaned = [];
+      const conflicts = new Set();
+      let duplicates = 0;
+      for (const row of rows) {
+        const id = String(row['Consignment Id']).trim().toUpperCase();
+        const signature = JSON.stringify(row);
+        if (seen.has(id)) {
+          if (seen.get(id) === signature) duplicates++;
+          else conflicts.add(id);
+        } else {
+          seen.set(id, signature);
+          cleaned.push(row);
+        }
+      }
+      if (conflicts.size) {
+        statusEl.textContent =
+          'CSV Conflict: ' + conflicts.size +
+          ' Consignment ID(s) have different records: ' +
+          [...conflicts].slice(0, 8).join(', ') +
+          '. Re-export or correct the CSV before using the report.';
+        statusEl.style.display = 'block';
+        return;
+      }
+
+      rawRows = cleaned;
+      if (duplicates) {
+        statusEl.textContent = duplicates +
+          ' exact duplicate CSV row(s) removed before counting or uploading.';
+        statusEl.style.display = 'block';
+      }
 
       resetBtn.style.display = 'inline-block';
 
