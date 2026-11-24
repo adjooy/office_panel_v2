@@ -3,7 +3,7 @@
 <title>COD Collection · AD JOY PANEL</title>
 <link rel="stylesheet" href="../../assets/css/base.css">
 <link rel="stylesheet" href="../../assets/css/panel-theme.css">
-<link rel="stylesheet" href="cod-collection.css?v=20261124-original-cod-layout-1">
+<link rel="stylesheet" href="cod-collection.css?v=20261124-inline-cod-transfer-1">
 </head><body class="cod-locked"><main class="page-content">
 <header class="page-head cod-page-header"><div><h1 class="page-title">COD Collection</h1>
 <p class="page-sub">Rider collection and payment-agent settlement · Firebase-synced daily ledger</p></div>
@@ -36,12 +36,11 @@
     <span id="codRiderStatus" class="cod-pill">Select a rider</span>
   </div>
   <div id="codRiders" class="cod-riders"></div>
-</section>
-<section class="card cod-section cod-transfer-section" aria-labelledby="codTransferHeading">
-  <div class="cod-section-head"><div><h2 id="codTransferHeading">Transfer Parcel COD</h2>
-  <span>Move COD between riders. Total Panel COD stays unchanged.</span></div></div>
+  <div id="codTransferParking" hidden><section id="codTransferPanel" class="cod-inline-transfer" aria-labelledby="codTransferHeading">
+  <div class="cod-section-head"><div><h3 id="codTransferHeading">Transfer COD to Another Rider</h3>
+  <span>Transfer from the selected rider; total COD remains the same.</span></div></div>
   <form id="codTransferForm" class="cod-transfer-form">
-    <label>From Rider<select id="codTransferFrom" required></select></label>
+    <label class="cod-transfer-source-hidden">From Rider<select id="codTransferFrom" required></select></label>
     <label>To Rider<select id="codTransferTo" required></select></label>
     <label>Transfer Amount (BDT)<input id="codTransferAmount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0.00" required></label>
     <label>Parcel CID / Unique Reference<input id="codTransferRef" type="text" maxlength="120" required placeholder="Parcel ID or unique batch reference"></label>
@@ -51,8 +50,10 @@
     </div>
   </form>
   <p class="cod-transfer-hint">The amount is deducted from the source rider and added to the destination. Enter a unique parcel CID/reference to stop accidental repeated transfers.</p>
-  <h3 class="cod-subtitle">Transfer History</h3>
+  <h4 class="cod-subtitle">Transfer History for Selected Rider</h4>
   <div id="codTransferHistory" class="cod-transfer-history"></div>
+</section>
+</div>
 </section>
 <section class="card cod-section"><div class="cod-section-head"><h2>Payment Agent Settlement</h2><span>Record each cash or online transfer</span></div>
 <form id="agentForm" class="cod-entry-form">
@@ -86,4 +87,4 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="cod-collection.js?v=20261124-original-cod-layout-1"></script></body></html>
+<script src="cod-collection.js?v=20261124-inline-cod-transfer-1"></script></body></html>
