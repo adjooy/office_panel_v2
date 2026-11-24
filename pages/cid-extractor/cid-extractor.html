@@ -4,12 +4,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>CID Extractor</title>
 
 <link rel="stylesheet" href="../../assets/css/base.css">
 <link rel="stylesheet" href="cid-extractor.css">
-
 </head>
 
 <body>
@@ -17,38 +15,25 @@
 <div class="page-content">
 
   <div class="page-head">
-
     <div>
-
-      <h1 class="page-title">
-        CID Extractor
-      </h1>
-
+      <h1 class="page-title">CID Extractor</h1>
       <p class="page-sub">
-        Extract unique Consignment IDs and upload
-        directly to Tracking Sheet
+        Extract and upload Consignment, Basket and Run IDs
       </p>
-
     </div>
-
   </div>
-
 
   <div class="card cid-card">
 
     <div class="cid-layout">
 
-      <!-- LEFT SIDE: RANDOM TEXT -->
-
       <div class="cid-left">
 
-        <div class="form-title">
-          Random Text
-        </div>
+        <div class="form-title">Random Text</div>
 
         <div class="cid-info">
-          Paste your complete text below.
-          Duplicate CIDs will be removed automatically.
+          Paste complete CarryBee data below.
+          Duplicate IDs will be removed automatically.
         </div>
 
         <textarea
@@ -59,24 +44,19 @@
 
         <div class="cid-actions">
 
-          <button
+          <button type="button"
             class="btn btn-dark"
-            id="extractCidBtn"
-          >
+            id="extractCidBtn">
             CID বের করুন
           </button>
 
-          <button
+          <button type="button"
             class="btn btn-light"
-            id="clearCidBtn"
-          >
+            id="clearCidBtn">
             Clear
           </button>
 
-          <span
-            class="cid-count"
-            id="cidCount"
-          >
+          <span class="cid-count" id="cidCount">
             0 unique CID পাওয়া গেছে
           </span>
 
@@ -84,14 +64,9 @@
 
       </div>
 
-
-      <!-- RIGHT SIDE: EXTRACTED CID -->
-
       <div class="cid-right">
 
-        <div class="form-title">
-          Extracted CID List
-        </div>
+        <div class="form-title">Extracted CID List</div>
 
         <div class="cid-info">
           Unique CID results
@@ -106,10 +81,9 @@
 
         <div class="cid-actions">
 
-          <button
+          <button type="button"
             class="btn cid-copy"
-            id="copyCidBtn"
-          >
+            id="copyCidBtn">
             Copy CID List
           </button>
 
@@ -122,16 +96,15 @@
 
     <!-- TRACKING SHEET AUTOMATION -->
 
-    <div class="tracking-upload">
+    <section class="tracking-upload">
 
       <div class="tracking-title">
         Upload to Tracking Sheet
       </div>
 
       <div class="tracking-description">
-        Select a date and upload extracted CIDs
-        directly to the selected column.
-        Existing CIDs will not be overwritten.
+        Select a date and upload extracted CIDs.
+        Existing data will not be overwritten.
       </div>
 
       <div class="tracking-controls">
@@ -142,38 +115,127 @@
             Select Date
           </label>
 
-          <input
-            type="date"
+          <input type="date"
             id="trackingDate"
-            class="tracking-date"
-          >
+            class="tracking-date">
 
         </div>
 
-        <button
+        <button type="button"
           class="tracking-btn tracking-yesterday"
-          id="addYesterdayBtn"
-        >
+          id="addYesterdayBtn">
           Add to Yesterday Hold
         </button>
 
-        <button
+        <button type="button"
           class="tracking-btn tracking-morning"
-          id="addMorningBtn"
-        >
+          id="addMorningBtn">
           Add to Morning Received
         </button>
 
       </div>
 
-      <div
-        id="trackingMsg"
+      <div id="trackingMsg"
         class="tracking-msg"
         role="status"
-        aria-live="polite"
-      ></div>
+        aria-live="polite">
+      </div>
 
-    </div>
+    </section>
+
+
+    <!-- RETURN SHEET AUTOMATION -->
+
+    <section class="tracking-upload">
+
+      <div class="tracking-title">
+        Return &amp; Area Change Sheet
+      </div>
+
+      <div class="tracking-description">
+        Paste Basket Details and Transfer Run Details
+        in the Random Text box above.
+        Extract and upload unique Consignment,
+        Basket and Run IDs.
+      </div>
+
+      <div class="tracking-controls">
+
+        <div class="tracking-date-wrap">
+
+          <label for="returnDate">
+            Select Date
+          </label>
+
+          <input type="date"
+            id="returnDate"
+            class="tracking-date">
+
+        </div>
+
+        <button type="button"
+          id="extractReturnBtn"
+          class="tracking-btn return-extract">
+          Extract Return Data
+        </button>
+
+        <button type="button"
+          id="uploadReturnBtn"
+          class="tracking-btn tracking-morning"
+          disabled>
+          Upload to Return Sheet
+        </button>
+
+      </div>
+
+      <div class="return-stats">
+
+        <div>
+          Consignment
+          <strong id="returnCidCount">0</strong>
+        </div>
+
+        <div>
+          Basket
+          <strong id="returnBasketCount">0</strong>
+        </div>
+
+        <div>
+          Run
+          <strong id="returnRunCount">0</strong>
+        </div>
+
+      </div>
+
+      <div class="return-table-wrap">
+
+        <table class="return-table">
+
+          <thead>
+            <tr>
+              <th>Consignment ID</th>
+              <th>Basket ID</th>
+              <th>RUN ID</th>
+            </tr>
+          </thead>
+
+          <tbody id="returnTableBody">
+            <tr>
+              <td colspan="3">No data extracted</td>
+            </tr>
+          </tbody>
+
+        </table>
+
+      </div>
+
+      <div id="returnMsg"
+        class="tracking-msg"
+        role="status"
+        aria-live="polite">
+      </div>
+
+    </section>
 
   </div>
 
@@ -181,6 +243,7 @@
 
 <script src="../../assets/js/common.js"></script>
 <script src="cid-extractor.js"></script>
+<script src="return-sheet.js"></script>
 
 </body>
 </html>
