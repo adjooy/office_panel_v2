@@ -434,7 +434,7 @@
     }
 
     const date = dateInput.value;
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       setReturnMsg('Please select a valid Return Mail date.', 'error');
       return;
     }
