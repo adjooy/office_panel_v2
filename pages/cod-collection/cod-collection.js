@@ -194,30 +194,158 @@ function button(label,fn,cls=''){const b=el('button','cod-action '+cls,label);b.
 function field(label,value,handler,type='text'){const wrap=el('label');wrap.append(el('span','',label));const input=el('input');input.type=type;input.value=value;input.addEventListener('change',()=>handler(input.value,input));wrap.append(input);return wrap;}
 function addPaymentForm(container,callback){const f=el('form','cod-entry-form');const method=el('select');for(const m of methods){const o=el('option','',m);o.value=m;method.append(o);}const amount=el('input');amount.type='number';amount.min='.01';amount.step='.01';amount.placeholder='0.00';amount.required=true;const ref=el('input');ref.maxLength=140;ref.placeholder='Reference / note';for(const [label,input] of [['Method',method],['Amount (BDT)',amount],['Reference',ref]]){const wrap=el('label');wrap.append(el('span','',label),input);f.append(wrap);}const b=el('button','btn btn-primary','+ Add Payment');b.type='submit';f.append(b);f.addEventListener('submit',e=>{e.preventDefault();const v=parseMoney(amount.value);if(v===null||v<=0)return alert('Enter a valid positive amount (maximum two decimals).');callback({id:uid(),method:method.value,amount:v,reference:ref.value.trim().slice(0,140)});f.reset();});container.append(f);}
 function table(payments,onRemove){const scroll=el('div','cod-table-scroll'),tab=el('table','cod-table'),thead=el('thead'),head=el('tr');['Method','Amount','Reference','Action'].forEach(h=>head.append(el('th','',h)));thead.append(head);tab.append(thead);const body=el('tbody');if(!payments.length){const row=el('tr'),td=el('td','cod-empty','No payments recorded');td.colSpan=4;row.append(td);body.append(row);}payments.forEach(p=>{const row=el('tr');[p.method,money(p.amount),p.reference||'—'].forEach(t=>row.append(el('td','',t)));const action=el('td');action.append(button('Remove',()=>onRemove(p.id),'cod-danger'));row.append(action);body.append(row);});tab.append(body);scroll.append(tab);return scroll;}
+let selectedRiderId = null;
+let selectedRiderDate = null;
+
 function render(){
-const d=current(),target=x('codRiders');target.replaceChildren();
-let updatedSent=false;
-for(const r of d.riders){
-try {
-  const ack=JSON.parse(localStorage.getItem('adjoy:cod-km-sent:v1')||'{}');
-  if(!r.sent&&ack['cod-'+today()+'-'+r.id]){r.sent=true;updatedSent=true;}
-}catch(e){}
-const card=el('article','cod-rider'),top=el('div','cod-rider-head'),title=el('h3','',r.name),actions=el('div','cod-rider-actions');const {paid,diff}=sums(r);
-actions.append(button('Send Due to KM',()=>sendToKM(r.id)));actions.append(button('Remove Rider',()=>{if(r.payments.length||r.cod){if(!confirm('Delete '+r.name+' and all related daily entries?'))return;}d.riders=d.riders.filter(a=>a.id!==r.id);persist();render();},'cod-danger'));top.append(title,actions);card.append(top);
-const fields=el('div','cod-rider-fields');
-fields.append(field('Rider name',r.name,(v,inp)=>{if(!v.trim()){inp.value=r.name;return;}r.name=v.trim().slice(0,90);persist();render();}));
-fields.append(field('Panel COD (BDT)',centsToInput(r.cod),(v,inp)=>{const n=parseMoney(v);if(n===null){alert('Invalid amount');inp.value=centsToInput(r.cod);return;}r.cod=n;persist();render();},'number'));
-fields.append(field('Remarks',r.remarks,(v)=>{r.remarks=v.slice(0,300);persist();},'text'));card.append(fields);
-const summary=el('div','cod-rider-summary');summary.append(el('span','', 'Collected: '+money(paid)),el('span',diff>0?'cod-positive':diff<0?'cod-negative':'',diff>0?'Due: '+money(diff):diff<0?'Overpaid: '+money(-diff):'Settled'));card.append(summary);
-if(r.sent){card.append(el('small','cod-memo','COD due was previously sent to KM Tracker for this rider/date. Later edits are not synced automatically; reconcile any difference manually.'));}
-card.append(table(r.payments,id=>{if(!confirm('Remove this payment?'))return;r.payments=r.payments.filter(p=>p.id!==id);persist();render();}));
-addPaymentForm(card,p=>{r.payments.push(p);persist();render();});target.append(card);}
-let total=0,collected=0,due=0,over=0;for(const r of d.riders){const s=sums(r);total+=r.cod;collected+=s.paid;due+=Math.max(0,s.diff);over+=Math.max(0,-s.diff);}
-const agent=d.agent.reduce((n,p)=>n+p.amount,0);for(const [id,n] of [['codTotal',total],['codCollected',collected],['codDue',due],['codOver',over],['agentPaid',agent]])x(id).textContent=money(n);
-const balance=collected-agent;x('agentBalance').textContent=(balance<0?'Overpaid ':'')+money(Math.abs(balance));x('agentBalance').style.color=balance<0?'#dc2626':'#172442';x('agentReconcile').textContent=balance>0?'Collect money held for agent: '+money(balance):balance<0?'Agent received '+money(-balance)+' more than recorded rider collections.':'All recorded collections have been settled with agent.';
-if(updatedSent)persist();
-const at=x('agentRows');at.replaceChildren();if(!d.agent.length){const tr=el('tr'),td=el('td','cod-empty','No agent payments recorded');td.colSpan=4;tr.append(td);at.append(tr);}for(const p of d.agent){const tr=el('tr');[p.method,money(p.amount),p.reference||'—'].forEach(v=>tr.append(el('td','',v)));const td=el('td');td.append(button('Remove',()=>{if(!confirm('Remove agent payment?'))return;d.agent=d.agent.filter(z=>z.id!==p.id);persist();render();},'cod-danger'));tr.append(td);at.append(tr);}
+  const d=current(), target=x('codRiders');
+  const date=today();
+  if(selectedRiderDate!==date){selectedRiderId=null;selectedRiderDate=date;}
+  const dropdown=x('codRiderSelect');
+  if(!d.riders.some(r=>r.id===selectedRiderId)){
+    selectedRiderId=d.riders[0]?.id||null;
+  }
+  dropdown.replaceChildren();
+  if(!d.riders.length){
+    const opt=el('option','', 'No riders — tap Add Rider');
+    opt.value='';dropdown.append(opt);
+  }
+  for(const r of d.riders){
+    const opt=el('option','',r.name);
+    opt.value=r.id;dropdown.append(opt);
+  }
+  dropdown.value=selectedRiderId||'';
+  dropdown.disabled=!d.riders.length;
+  x('codRiderCount').textContent=d.riders.length+' rider'+(d.riders.length===1?'':'s');
+
+  let total=0,collected=0,cash=0,online=0,due=0,over=0;
+  for(const r of d.riders){
+    const s=sums(r);
+    total+=r.cod; collected+=s.paid;
+    due+=Math.max(0,s.diff);over+=Math.max(0,-s.diff);
+    for(const p of r.payments){
+      if(p.method==='Cash')cash+=p.amount;
+      else online+=p.amount;
+    }
+  }
+  const agent=d.agent.reduce((n,p)=>n+p.amount,0);
+  for(const [id,n] of [
+    ['codTotal',total],['codCash',cash],['codOnline',online],
+    ['codCollected',collected],['codDue',due],['codOver',over],
+    ['agentPaid',agent]
+  ])x(id).textContent=money(n);
+  const balance=collected-agent;
+  x('agentBalance').textContent=(balance<0?'Overpaid ':'')+money(Math.abs(balance));
+  x('agentBalance').style.color=balance<0?'#be123c':'#172442';
+  x('codReconcileNote').textContent=due>0
+    ? money(due)+' is still outstanding across '+d.riders.filter(r=>sums(r).diff>0).length+' rider(s).'
+    : 'All rider COD amounts are settled or overpaid.';
+  x('agentReconcile').textContent=balance>0
+    ? 'Money still held for payment agent: '+money(balance)
+    :balance<0
+      ? 'Agent received '+money(-balance)+' more than recorded rider collections.'
+      :'All recorded collections have been settled with agent.';
+
+  target.replaceChildren();
+  const r=d.riders.find(q=>q.id===selectedRiderId);
+  if(!r){
+    target.append(el('p','cod-empty','Add your first rider to start collecting COD.'));
+    x('codRiderStatus').textContent='No rider selected';
+  }else{
+    // The KM handoff acknowledges a successful save via localStorage.
+    // Synchronize that flag with Firestore only when it actually changes.
+    try {
+      const ack=JSON.parse(localStorage.getItem('adjoy:cod-km-sent:v1')||'{}');
+      if(!r.sent&&ack['cod-'+date+'-'+r.id]){r.sent=true;persist();}
+    }catch(err){}
+
+    const {paid,diff}=sums(r);
+    const paidCash=r.payments.filter(p=>p.method==='Cash').reduce((n,p)=>n+p.amount,0);
+    const paidOnline=paid-paidCash;
+    const status=diff>0?'Due '+money(diff):diff<0?'Overpaid '+money(-diff):'Fully settled';
+    x('codRiderStatus').textContent=status;
+    x('codRiderStatus').className='cod-pill '+(diff>0?'cod-pill-due':diff<0?'cod-pill-over':'cod-pill-ok');
+
+    const card=el('article','cod-rider cod-rider-focus');
+    const top=el('div','cod-rider-head'), title=el('h3','',r.name), actions=el('div','cod-rider-actions');
+    actions.append(button('Send Due to KM',()=>sendToKM(r.id)));
+    actions.append(button('Remove Rider',()=>{
+      if(!confirm('Remove '+r.name+' and all the entries for this work date?'))return;
+      d.riders=d.riders.filter(item=>item.id!==r.id);
+      selectedRiderId=null;persist();render();
+    },'cod-danger'));
+    top.append(title,actions);card.append(top);
+
+    const fields=el('div','cod-rider-fields');
+    fields.append(field('Rider name',r.name,(v,inp)=>{
+      const name=v.trim().slice(0,90);
+      if(!name){inp.value=r.name;return;}
+      if(d.riders.some(z=>z.id!==r.id&&z.name.toLowerCase()===name.toLowerCase())){
+        alert('Another rider already uses this name.');inp.value=r.name;return;
+      }
+      r.name=name;persist();render();
+    }));
+    fields.append(field('Panel COD (BDT)',centsToInput(r.cod),(v,inp)=>{
+      const n=parseMoney(v);
+      if(n===null){alert('Invalid amount');inp.value=centsToInput(r.cod);return;}
+      r.cod=n;persist();render();
+    },'number'));
+    fields.append(field('Remarks',r.remarks,(v)=>{r.remarks=v.slice(0,300);persist();},'text'));
+    card.append(fields);
+
+    const metrics=el('div','cod-rider-metrics');
+    for(const [name,val,extra] of [
+      ['Panel COD',r.cod,''],
+      ['Cash',paidCash,''],
+      ['Online',paidOnline,''],
+      ['Total Paid',paid,''],
+      [diff>0?'DUE':diff<0?'OVERPAID':'SETTLED',Math.abs(diff),diff>0?'cod-metric-due':diff<0?'cod-metric-over':'cod-metric-ok']
+    ]){
+      const item=el('div','cod-rider-metric '+extra);
+      item.append(el('span','',name),el('strong','',money(val)));
+      metrics.append(item);
+    }
+    card.append(metrics);
+    if(diff>0)card.append(el('p','cod-due-explainer',
+      'Outstanding: '+money(r.cod)+' Panel COD − '+money(paid)+' collected = '+money(diff)+' still due.'));
+    else if(diff<0)card.append(el('p','cod-due-explainer cod-paid-note',
+      'Overpaid by '+money(-diff)+'. Please verify the extra payment.'));
+    else card.append(el('p','cod-due-explainer cod-paid-note','All COD for this rider has been collected.'));
+    if(r.sent)card.append(el('small','cod-memo',
+      'This rider/date already has a COD Due transfer to KM Tracker. Changes here do not adjust that deduction automatically.'));
+
+    const sub=el('h4','cod-subtitle','Payment History');
+    card.append(sub,table(r.payments,id=>{
+      if(!confirm('Remove this payment?'))return;
+      r.payments=r.payments.filter(p=>p.id!==id);
+      persist();render();
+    }));
+    card.append(el('h4','cod-subtitle','Add Cash or Online Payment'));
+    addPaymentForm(card,p=>{r.payments.push(p);persist();render();});
+    target.append(card);
+  }
+
+  const at=x('agentRows');
+  at.replaceChildren();
+  if(!d.agent.length){
+    const tr=el('tr'),td=el('td','cod-empty','No agent payments recorded');
+    td.colSpan=4;tr.append(td);at.append(tr);
+  }
+  for(const p of d.agent){
+    const tr=el('tr');
+    [p.method,money(p.amount),p.reference||'—'].forEach(v=>tr.append(el('td','',v)));
+    const td=el('td');
+    td.append(button('Remove',()=>{
+      if(!confirm('Remove agent payment?'))return;
+      d.agent=d.agent.filter(z=>z.id!==p.id);persist();render();
+    },'cod-danger'));
+    tr.append(td);at.append(tr);
+  }
 }
+x('codRiderSelect').addEventListener('change',e=>{
+  selectedRiderId=e.target.value;render();
+});
+
 function sendToKM(id){const r=current().riders.find(z=>z.id===id);if(!r)return;
 const sourceId='cod-'+today()+'-'+r.id;
 try{
