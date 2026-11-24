@@ -1902,8 +1902,8 @@ async function importCODDueFromSession() {
   }
   if (!payload || payload.version !== 1 ||
       typeof payload.sourceId !== 'string' ||
-      !/^cod-\\d{4}-\\d{2}-\\d{2}-[a-z0-9-]+$/i.test(payload.sourceId) ||
-      !/^\\d{4}-\\d{2}-\\d{2}$/.test(payload.date) ||
+      !/^cod-\d{4}-\d{2}-\d{2}-[a-z0-9-]+$/i.test(payload.sourceId) ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(payload.date) ||
       !Number.isSafeInteger(payload.amountCents) || payload.amountCents <= 0 ||
       typeof payload.riderName !== 'string' || !payload.riderName.trim()) {
     sessionStorage.removeItem(key);
@@ -1923,7 +1923,7 @@ async function importCODDueFromSession() {
     return;
   }
 
-  const normalized = x => x.trim().toLocaleLowerCase().replace(/\\s+/g, ' ');
+  const normalized = x => x.trim().toLocaleLowerCase().replace(/\s+/g, ' ');
   const matches = DataStore.state.riders.filter(
     r => normalized(r.name) === normalized(payload.riderName)
   );
