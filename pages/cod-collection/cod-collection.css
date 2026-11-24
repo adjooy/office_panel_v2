@@ -179,3 +179,24 @@ body.cod-locked #codTransferForm,body.cod-locked #codTransferHistory{pointer-eve
 @media(max-width:380px){
  .cod-rider-metric.cod-metric-original strong,.cod-rider-metric.cod-metric-adjusted strong{font-size:14px}
 }
+
+/* Selected-rider inline COD transfer: no separate top-level card. */
+.cod-transfer-source-hidden{display:none!important}
+.cod-inline-transfer{margin:20px 0 8px;padding:16px;border:1px solid #d9e4f7;background:#f8faff;border-radius:14px}
+.cod-inline-transfer .cod-section-head{margin-bottom:12px}
+.cod-inline-transfer .cod-section-head h3{margin:0 0 5px;font-size:16px;color:#21395e}
+.cod-inline-transfer .cod-section-head span{font-size:12px;color:#6b7b97;line-height:1.5}
+.cod-inline-transfer .cod-transfer-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cod-inline-transfer .cod-transfer-form label:nth-child(4){grid-column:1/-1}
+.cod-inline-transfer .cod-transfer-hint{background:#eef3ff}
+.cod-transfer-incoming{color:#6b7b97;font-size:11px}
+@media(max-width:600px){
+ .cod-inline-transfer{padding:12px;margin:16px 0 8px;border-radius:12px}
+ .cod-inline-transfer .cod-transfer-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .cod-inline-transfer .cod-transfer-form label:nth-child(2){grid-column:1/-1}
+ .cod-inline-transfer .cod-transfer-form label:nth-child(3){grid-column:1/-1}
+ .cod-inline-transfer .cod-transfer-form label:nth-child(4){grid-column:1/-1}
+ .cod-inline-transfer .cod-transfer-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .cod-inline-transfer .cod-transfer-actions button:first-child{grid-column:1/-1}
+ .cod-inline-transfer .cod-transfer-actions button:not(:first-child){grid-column:1/-1}
+}
