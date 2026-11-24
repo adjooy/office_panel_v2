@@ -441,8 +441,8 @@
 
     // Option B: list every consignment once; list each Basket/Run once.
     const mailText = returnData.cids.map((cid, i) =>
-      [cid, returnData.baskets[i] || '', returnData.runs[i] || ''].join('\\t')
-    ).join('\\n');
+      [cid, returnData.baskets[i] || '', returnData.runs[i] || ''].join('\t')
+    ).join('\n');
 
     // Both panels share the same origin and tab (the dashboard iframe).
     // Session storage is a reliable handoff even when clipboard permission
