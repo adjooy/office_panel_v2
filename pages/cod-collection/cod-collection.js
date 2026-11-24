@@ -237,6 +237,154 @@ function button(label,fn,cls=''){const b=el('button','cod-action '+cls,label);b.
 function field(label,value,handler,type='text'){const wrap=el('label');wrap.append(el('span','',label));const input=el('input');input.type=type;input.value=value;input.addEventListener('change',()=>handler(input.value,input));wrap.append(input);return wrap;}
 function addPaymentForm(container,callback){const f=el('form','cod-entry-form');const method=el('select');for(const m of methods){const o=el('option','',m);o.value=m;method.append(o);}const amount=el('input');amount.type='number';amount.min='.01';amount.step='.01';amount.placeholder='0.00';amount.required=true;const ref=el('input');ref.maxLength=140;ref.placeholder='Reference / note';for(const [label,input] of [['Method',method],['Amount (BDT)',amount],['Reference',ref]]){const wrap=el('label');wrap.append(el('span','',label),input);f.append(wrap);}const b=el('button','btn btn-primary','+ Add Payment');b.type='submit';f.append(b);f.addEventListener('submit',e=>{e.preventDefault();const v=parseMoney(amount.value);if(v===null||v<=0)return alert('Enter a valid positive amount (maximum two decimals).');callback({id:uid(),method:method.value,amount:v,reference:ref.value.trim().slice(0,140)});f.reset();});container.append(f);}
 function table(payments,onRemove,onEdit){const scroll=el('div','cod-table-scroll'),tab=el('table','cod-table'),thead=el('thead'),head=el('tr');['Method','Amount','Reference','Action'].forEach(h=>head.append(el('th','',h)));thead.append(head);tab.append(thead);const body=el('tbody');if(!payments.length){const row=el('tr'),td=el('td','cod-empty','No payments recorded');td.colSpan=4;row.append(td);body.append(row);}payments.forEach(p=>{const row=el('tr');[p.method,money(p.amount),p.reference||'—'].forEach(t=>row.append(el('td','',t)));const action=el('td');action.append(button('Edit',()=>onEdit(p.id)));action.append(button('Remove',()=>onRemove(p.id),'cod-danger'));row.append(action);body.append(row);});tab.append(body);scroll.append(tab);return scroll;}
+
+/* Transaction edit — updates existing payment records (never adds duplicates). */
+let editingPayment=null;
+const editDialog=x('codEditDialog');
+function openEditPayment(kind,riderId,paymentId){
+  if(!ensureReady())return;
+  const d=current();
+  const arr=kind==='agent'?d.agent:d.riders.find(r=>r.id===riderId)?.payments;
+  const entry=arr?.find(p=>p.id===paymentId);
+  if(!entry)return alert('Entry is no longer available. Refresh Firebase.');
+  editingPayment={kind,riderId,paymentId,date:today()};
+  const method=x('codEditMethod');method.replaceChildren();
+  for(const value of methods){const option=el('option','',value);option.value=value;method.append(option);}
+  method.value=entry.method;
+  x('codEditAmount').value=centsToInput(entry.amount);
+  x('codEditReference').value=entry.reference||'';
+  x('codEditHeading').textContent=kind==='agent'?'Edit Agent Payment':'Edit Rider Payment';
+  if(typeof editDialog.showModal==='function')editDialog.showModal();
+  else editDialog.setAttribute('open','');
+}
+function closeEditPayment(){
+  editingPayment=null;
+  if(typeof editDialog.close==='function')editDialog.close();
+  else editDialog.removeAttribute('open');
+}
+x('codEditCancel').addEventListener('click',closeEditPayment);
+editDialog.addEventListener('cancel',()=>{editingPayment=null;});
+x('codEditForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  if(!editingPayment||!ensureReady())return;
+  if(editingPayment.date!==today())return alert('Date changed. Close and reopen the payment editor.');
+  const d=current();
+  const arr=editingPayment.kind==='agent'?d.agent:d.riders.find(r=>r.id===editingPayment.riderId)?.payments;
+  const entry=arr?.find(p=>p.id===editingPayment.paymentId);
+  if(!entry)return alert('Entry not found. Refresh the page.');
+  const amount=parseMoney(x('codEditAmount').value);
+  if(amount===null||amount<=0)return alert('Enter a valid positive amount.');
+  const method=x('codEditMethod').value;
+  if(!methods.includes(method))return alert('Select a valid payment method.');
+  const reference=x('codEditReference').value.trim().slice(0,140);
+  entry.amount=amount;entry.method=method;entry.reference=reference;
+  persist();closeEditPayment();render();
+});
+
+let editingTransferId=null;
+let editingTransferDate=null;
+function resetTransferEditor(){
+  editingTransferId=null;
+  editingTransferDate=null;
+  x('codTransferForm').reset();
+  x('codTransferSubmit').textContent='Transfer COD';
+  x('codTransferCancel').hidden=true;
+}
+x('codTransferCancel').addEventListener('click',()=>{resetTransferEditor();renderTransferUI(current());});
+function selectOptions(select,items){
+  const old=select.value;
+  select.replaceChildren();
+  for(const rider of items){
+    const option=el('option','',rider.name);
+    option.value=rider.id;select.append(option);
+  }
+  if(items.some(r=>r.id===old))select.value=old;
+}
+function renderTransferUI(d){
+  const from=x('codTransferFrom'),to=x('codTransferTo');
+  const prevFrom=from.value,prevTo=to.value;
+  selectOptions(from,d.riders);selectOptions(to,d.riders);
+  if(editingTransferId && editingTransferDate!==today())resetTransferEditor();
+  if(editingTransferId){
+    const t=transfersOf(d).find(z=>z.id===editingTransferId);
+    if(!t)resetTransferEditor();
+    else {from.value=t.fromId;to.value=t.toId;}
+  }else{
+    if(d.riders.some(r=>r.id===selectedRiderId))from.value=selectedRiderId;
+    else if(d.riders.some(r=>r.id===prevFrom))from.value=prevFrom;
+    if(d.riders.some(r=>r.id===prevTo) && prevTo!==from.value)to.value=prevTo;
+    else to.value=d.riders.find(r=>r.id!==from.value)?.id||'';
+  }
+  from.disabled=d.riders.length<2;
+  to.disabled=d.riders.length<2;
+  x('codTransferSubmit').disabled=d.riders.length<2;
+  const panel=x('codTransferHistory');
+  panel.replaceChildren();
+  if(!transfersOf(d).length){
+    panel.append(el('p','cod-empty','No parcel COD transfers for this date.'));
+  }
+  const names=new Map(d.riders.map(r=>[r.id,r.name]));
+  for(const t of transfersOf(d).slice().reverse()){
+    const card=el('div','cod-transfer-item');
+    const detail=el('div','cod-transfer-detail');
+    detail.append(
+      el('strong','',money(t.amount)+' · '+(names.get(t.fromId)||'Unknown')+' → '+(names.get(t.toId)||'Unknown')),
+      el('small','',t.reference)
+    );
+    const actions=el('div','cod-transfer-item-actions');
+    actions.append(button('Edit',()=>{
+      if(!ensureReady())return;
+      editingTransferId=t.id;editingTransferDate=today();
+      from.value=t.fromId;to.value=t.toId;
+      x('codTransferAmount').value=centsToInput(t.amount);
+      x('codTransferRef').value=t.reference;
+      x('codTransferSubmit').textContent='Update Transfer';
+      x('codTransferCancel').hidden=false;
+      x('codTransferForm').scrollIntoView({behavior:'smooth',block:'center'});
+    }));
+    actions.append(button('Remove',()=>{
+      if(!ensureReady())return;
+      if(!confirm('Remove transfer '+money(t.amount)+' ('+t.reference+')?'))return;
+      const candidate=clone(d);candidate.transfers=transfersOf(d).filter(z=>z.id!==t.id);
+      if(candidate.riders.some(r=>effectiveCOD(candidate,r.id)<0))
+        return alert('Cannot remove this transfer: another rider has already transferred some of its COD onward. Reverse or edit later transfers first.');
+      d.transfers=candidate.transfers;
+      resetTransferEditor();persist();render();
+    },'cod-danger'));
+    card.append(detail,actions);panel.append(card);
+  }
+}
+x('codTransferForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  if(!ensureReady())return;
+  const d=current(),amount=parseMoney(x('codTransferAmount').value);
+  const fromId=x('codTransferFrom').value,toId=x('codTransferTo').value;
+  const reference=x('codTransferRef').value.trim().slice(0,120);
+  const id=editingTransferId||uid();
+  if(editingTransferId && editingTransferDate!==today())
+    return alert('Transfer work date changed. Reopen this transfer before editing.');
+  if(editingTransferId && !transfersOf(d).some(t=>t.id===editingTransferId))
+    return alert('Transfer not found. Refresh the cloud data.');
+  const transfer={id,fromId,toId,amount,reference};
+  const error=safeTransfer(d,transfer,editingTransferId);
+  if(error)return alert(error);
+  const candidate=clone(d);
+  candidate.transfers=editingTransferId
+    ?transfersOf(d).map(t=>t.id===editingTransferId?transfer:t)
+    :[...transfersOf(d),transfer];
+  if(candidate.riders.some(r=>effectiveCOD(candidate,r.id)<0))
+    return alert('This transfer would give a rider negative COD. Correct other linked transfers first.');
+  const before=transferStatus(d),after=transferStatus(candidate);
+  if(before.base!==after.base||before.effective!==after.effective)
+    return alert('Transfer total mismatch. No changes saved.');
+  const name=id=>d.riders.find(r=>r.id===id)?.name||'Unknown';
+  if(!confirm((editingTransferId?'Update':'Transfer')+' '+money(amount)+' COD from '+name(fromId)+' to '+name(toId)+'?\n\nTotal COD remains '+money(before.effective)+'.'))
+    return;
+  d.transfers=candidate.transfers;
+  persist();resetTransferEditor();render();
+  notice('COD transfer saved. Total Panel COD unchanged: '+money(before.effective));
+});
+
 let selectedRiderId = null;
 let selectedRiderDate = null;
 
@@ -265,7 +413,8 @@ function render(){
   for(const r of d.riders){
     const s=sums(r);
     total+=effectiveCOD(d,r.id); collected+=s.paid;
-    due+=Math.max(0,s.diff);over+=Math.max(0,-s.diff);
+    const riderDiff=effectiveCOD(d,r.id)-s.paid;
+    due+=Math.max(0,riderDiff);over+=Math.max(0,-riderDiff);
     for(const p of r.payments){
       if(p.method==='Cash')cash+=p.amount;
       else online+=p.amount;
