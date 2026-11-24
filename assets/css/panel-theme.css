@@ -1,0 +1,29 @@
+/* AD JOY PANEL · Unified visual system v1 */
+:root{--bg:#f4f7fc;--card:#fff;--text:#172442;--muted:#64748b;--border:#e1e8f3;--accent:#4f67ed;--accent2:#3f56d4;--shadow:0 6px 22px rgba(30,50,90,.06);--radius:16px}
+html,body{background:#f4f7fc;color:#172442}
+body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+.page-content,.wrap{max-width:1450px}
+.page-head{margin-bottom:19px}
+.page-title{font-size:clamp(23px,2.4vw,30px);font-weight:800;letter-spacing:-.7px}
+.page-sub,.cid-info,.tracking-description,.hint{color:#697993}
+.card,.panel,.mail-form,.mail-preview{background:#fff;border:1px solid #e1e8f3;border-radius:16px;box-shadow:0 5px 20px rgba(27,52,90,.055)}
+.btn,.tracking-btn,.snapshot-clear{border-radius:10px;min-height:40px;transition:background .16s,box-shadow .16s}
+.btn-primary,.tracking-yesterday,.return-extract{background:#4f67ed;color:#fff}
+.btn-primary:hover,.tracking-yesterday:hover,.return-extract:hover{background:#4058d5}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #a5b4fc;outline-offset:2px}
+input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select{border-radius:10px}
+table{border-collapse:collapse}
+thead th{letter-spacing:.01em}
+.page-content{padding-bottom:calc(48px + env(safe-area-inset-bottom,0px))}
+@media(max-width:600px){.page-content{padding:14px 12px calc(62px + env(safe-area-inset-bottom,0px))}.page-title{font-size:23px}.card,.mail-form,.mail-preview{border-radius:14px}}
+/* Preserve the Rider KM tracker and Backlogs module logic while matching shell colors. */
+body.adjoy-unified .card,body.adjoy-unified .panel{background:#fff;border:1px solid #e1e8f3;box-shadow:0 5px 20px rgba(27,52,90,.055);border-radius:16px}
+body.adjoy-unified{background:#f4f7fc;color:#172442}
+body.adjoy-unified .dash{background:#172442}
+body.adjoy-unified .dash .odo{background:#172442}
+body.adjoy-unified .btn-amber{background:#4f67ed;color:#fff}
+body.adjoy-unified .side-menu{background:#fff;border-color:#e1e8f3}
+body.adjoy-unified h1,body.adjoy-unified h2,body.adjoy-unified h3{letter-spacing:-.35px}
+body.adjoy-unified .tag{background:#f4f7fc;border-color:#e1e8f3}
+body.adjoy-unified .wrap{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+@media(max-width:600px){body.adjoy-unified .wrap{padding:14px 12px calc(75px + env(safe-area-inset-bottom,0px))}}
