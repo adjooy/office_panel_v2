@@ -486,7 +486,8 @@ function render(){
 
     const metrics=el('div','cod-rider-metrics');
     for(const [name,val,extra] of [
-      ['Adjusted COD',riderCOD,''],
+      ['Original Panel COD',r.cod,'cod-metric-original'],
+      ['Adjusted COD',riderCOD,'cod-metric-adjusted'],
       ['Cash',paidCash,''],
       ['Online',paidOnline,''],
       ['Total Paid',paid,''],
