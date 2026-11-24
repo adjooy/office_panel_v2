@@ -12,24 +12,22 @@
 
 <style>
 
+.cid-card {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
 .cid-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
   align-items: start;
-  width: 100%;
 }
 
 .cid-left,
 .cid-right {
   min-width: 0;
-  width: 100%;
-}
-
-.cid-card {
-  width: 100%;
-  max-width: none;
-  box-sizing: border-box;
 }
 
 .cid-layout .cid-textarea,
@@ -48,7 +46,11 @@
   margin-bottom: 12px;
 }
 
-.cid-layout .cid-actions {
+.cid-layout .form-title {
+  margin-bottom: 8px;
+}
+
+.cid-actions {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -56,21 +58,115 @@
   margin-top: 14px;
 }
 
-.cid-layout .cid-copy {
+.cid-copy {
   width: 100%;
   justify-content: center;
   text-align: center;
 }
 
-.cid-layout .form-title {
-  margin-bottom: 8px;
+.tracking-upload {
+  border-top: 1px solid #d1d5db;
+  margin-top: 24px;
+  padding-top: 20px;
+}
+
+.tracking-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.tracking-description {
+  font-size: 13px;
+  opacity: .7;
+  margin-bottom: 16px;
+}
+
+.tracking-controls {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.tracking-date-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tracking-date-wrap label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tracking-date {
+  padding: 11px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.tracking-btn {
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tracking-yesterday {
+  background: #2563eb;
+}
+
+.tracking-morning {
+  background: #15803d;
+}
+
+.tracking-btn:hover {
+  filter: brightness(.92);
+}
+
+.tracking-btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.tracking-msg {
+  display: none;
+  padding: 12px 14px;
+  margin-top: 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.tracking-msg.success {
+  display: block;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.tracking-msg.error {
+  display: block;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.tracking-msg.info {
+  display: block;
+  background: #dbeafe;
+  color: #1e40af;
 }
 
 @media (max-width: 768px) {
 
   .cid-layout {
     grid-template-columns: 1fr;
-    gap: 24px;
   }
 
   .cid-layout .cid-textarea,
@@ -83,10 +179,23 @@
     min-height: auto;
   }
 
+  .tracking-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tracking-date {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .tracking-btn {
+    width: 100%;
+  }
+
 }
 
 </style>
-
 </head>
 
 <body>
@@ -102,7 +211,8 @@
       </h1>
 
       <p class="page-sub">
-        Paste any random text and extract only unique Consignment IDs
+        Extract unique Consignment IDs and upload
+        directly to Tracking Sheet
       </p>
 
     </div>
@@ -115,7 +225,7 @@
     <div class="cid-layout">
 
 
-      <!-- LEFT SIDE: RANDOM TEXT INPUT -->
+      <!-- LEFT SIDE -->
 
       <div class="cid-left">
 
@@ -124,8 +234,8 @@
         </div>
 
         <div class="cid-info">
-          Paste your complete text below. The extractor will find only valid
-          CID numbers and remove duplicate CIDs automatically.
+          Paste your complete text below.
+          Duplicate CIDs will be removed automatically.
         </div>
 
         <textarea
@@ -162,7 +272,7 @@
       </div>
 
 
-      <!-- RIGHT SIDE: EXTRACTED CID OUTPUT -->
+      <!-- RIGHT SIDE -->
 
       <div class="cid-right">
 
@@ -171,8 +281,8 @@
         </div>
 
         <div class="cid-info">
-          All unique Consignment IDs will appear below.
-          Copy the complete CID list with one click.
+          All unique Consignment IDs will appear here.
+          Copy or upload directly to Tracking Sheet.
         </div>
 
         <textarea
@@ -195,6 +305,61 @@
 
       </div>
 
+    </div>
+
+
+    <!-- TRACKING SHEET UPLOAD -->
+
+    <div class="tracking-upload">
+
+      <div class="tracking-title">
+        Upload to Tracking Sheet
+      </div>
+
+      <div class="tracking-description">
+        Select a date and upload extracted CIDs
+        directly to the selected column.
+        Existing CIDs will not be overwritten.
+      </div>
+
+      <div class="tracking-controls">
+
+        <div class="tracking-date-wrap">
+
+          <label for="trackingDate">
+            Select Date
+          </label>
+
+          <input
+            type="date"
+            id="trackingDate"
+            class="tracking-date"
+          >
+
+        </div>
+
+        <button
+          class="tracking-btn tracking-yesterday"
+          id="addYesterdayBtn"
+        >
+          Add to Yesterday Hold
+        </button>
+
+        <button
+          class="tracking-btn tracking-morning"
+          id="addMorningBtn"
+        >
+          Add to Morning Received
+        </button>
+
+      </div>
+
+      <div
+        id="trackingMsg"
+        class="tracking-msg"
+        role="status"
+        aria-live="polite"
+      ></div>
 
     </div>
 
