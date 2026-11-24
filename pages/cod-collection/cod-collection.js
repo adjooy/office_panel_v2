@@ -267,24 +267,16 @@ function render(){
     x('codRiderStatus').className='cod-pill '+(diff>0?'cod-pill-due':diff<0?'cod-pill-over':'cod-pill-ok');
 
     const card=el('article','cod-rider cod-rider-focus');
-    const top=el('div','cod-rider-head'), title=el('h3','',r.name), actions=el('div','cod-rider-actions');
+    const top=el('div','cod-rider-head'), actions=el('div','cod-rider-actions');
     actions.append(button('Send Due to KM',()=>sendToKM(r.id)));
     actions.append(button('Remove Rider',()=>{
       if(!confirm('Remove '+r.name+' and all the entries for this work date?'))return;
       d.riders=d.riders.filter(item=>item.id!==r.id);
       selectedRiderId=null;persist();render();
     },'cod-danger'));
-    top.append(title,actions);card.append(top);
+    top.append(actions);card.append(top);
 
     const fields=el('div','cod-rider-fields');
-    fields.append(field('Rider name',r.name,(v,inp)=>{
-      const name=v.trim().slice(0,90);
-      if(!name){inp.value=r.name;return;}
-      if(d.riders.some(z=>z.id!==r.id&&z.name.toLowerCase()===name.toLowerCase())){
-        alert('Another rider already uses this name.');inp.value=r.name;return;
-      }
-      r.name=name;persist();render();
-    }));
     fields.append(field('Panel COD (BDT)',centsToInput(r.cod),(v,inp)=>{
       const n=parseMoney(v);
       if(n===null){alert('Invalid amount');inp.value=centsToInput(r.cod);return;}
