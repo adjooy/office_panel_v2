@@ -430,7 +430,7 @@ function render(){
   x('agentBalance').textContent=(balance<0?'Overpaid ':'')+money(Math.abs(balance));
   x('agentBalance').style.color=balance<0?'#be123c':'#172442';
   x('codReconcileNote').textContent=due>0
-    ? money(due)+' is still outstanding across '+d.riders.filter(r=>sums(r).diff>0).length+' rider(s).'
+    ? money(due)+' is still outstanding across '+d.riders.filter(r=>effectiveCOD(d,r.id)-sums(r).paid>0).length+' rider(s).'
     : 'All rider COD amounts are settled or overpaid.';
   x('agentReconcile').textContent=balance>0
     ? 'Money still held for payment agent: '+money(balance)
@@ -552,7 +552,29 @@ x('codDate').addEventListener('change',()=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(today
 x('codAddRider').addEventListener('click',()=>{const n=prompt('Rider name:');if(!n||!n.trim())return;const d=current();if(d.riders.some(r=>r.name.toLowerCase()===n.trim().toLowerCase()))return alert('Rider already exists for this day.');const rider={id:uid(),name:n.trim().slice(0,90),cod:0,payments:[],remarks:'',sent:false};d.riders.push(rider);selectedRiderId=rider.id;persist();render();});
 x('agentForm').addEventListener('submit',e=>{e.preventDefault();const v=parseMoney(x('agentAmount').value);if(v===null||v<=0)return alert('Invalid agent payment amount.');current().agent.push({id:uid(),method:x('agentMethod').value,amount:v,reference:x('agentReference').value.trim().slice(0,140)});persist();x('agentForm').reset();render();});
 function download(name,content,type){const b=new Blob([content],{type}),url=URL.createObjectURL(b),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-x('codExport').addEventListener('click',()=>{const lines=[['Date','Type','Rider','Panel COD','Payment method','Payment amount','Due','Overpaid','Remarks/Reference']];const d=current();for(const r of d.riders){const s=sums(r);lines.push([today(),'Rider summary',r.name,centsToInput(r.cod),'',centsToInput(s.paid),centsToInput(Math.max(0,s.diff)),centsToInput(Math.max(0,-s.diff)),r.remarks]);for(const p of r.payments)lines.push([today(),'Rider payment',r.name,'',p.method,centsToInput(p.amount),'','',p.reference]);}for(const p of d.agent)lines.push([today(),'Agent payment','','',p.method,centsToInput(p.amount),'','',p.reference]);const csv='\uFEFF'+lines.map(row=>row.map(v=>{let s=String(v??'');if(/^[=+@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}).join(',')).join('\r\n');download('COD_Collection_'+today()+'.csv',csv,'text/csv;charset=utf-8');});
+x('codExport').addEventListener('click',()=>{
+  const headers=['Date','Type','Rider','Effective COD','Payment Method','Payment Amount','Due','Overpaid','Reference / Remarks','From Rider','To Rider'];
+  const lines=[headers],d=current(),names=new Map(d.riders.map(r=>[r.id,r.name]));
+  for(const r of d.riders){
+    const paid=sums(r).paid,amount=effectiveCOD(d,r.id),difference=amount-paid;
+    lines.push([today(),'Rider summary',r.name,centsToInput(amount),'',centsToInput(paid),
+      centsToInput(Math.max(0,difference)),centsToInput(Math.max(0,-difference)),r.remarks,'','']);
+    for(const p of r.payments)
+      lines.push([today(),'Rider payment',r.name,'',p.method,centsToInput(p.amount),'','',p.reference,'','']);
+  }
+  for(const t of transfersOf(d))
+    lines.push([today(),'COD transfer','','','',centsToInput(t.amount),'','',t.reference,
+      names.get(t.fromId)||'',names.get(t.toId)||'']);
+  for(const p of d.agent)
+    lines.push([today(),'Agent payment','','',p.method,centsToInput(p.amount),'','',p.reference,'','']);
+  const csv='\uFEFF'+lines.map(row=>row.map(v=>{
+    let value=String(v??'');
+    // Avoid spreadsheet formula injection from user-entered notes/names.
+    if(/^[=+@]/.test(value))value="'"+value;
+    return '"'+value.replace(/"/g,'""')+'"';
+  }).join(',')).join('\r\n');
+  download('COD_Collection_'+today()+'.csv',csv,'text/csv;charset=utf-8');
+});
 x('codBackup').addEventListener('click',()=>download('COD_Backup_'+bdToday()+'.json',JSON.stringify(db,null,2),'application/json'));
 // Restore only dates not present in Firestore; never overwrite cloud records.
 x('codRestore').addEventListener('change',async e=>{
