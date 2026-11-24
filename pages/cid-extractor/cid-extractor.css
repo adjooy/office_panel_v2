@@ -1,72 +1,374 @@
-.cid-card{
-  padding:20px;
+
+/* =========================================================
+   AD JOY PANEL
+   CID EXTRACTOR
+========================================================= */
+
+
+/* MAIN CARD */
+
+.cid-card {
+  padding: 20px;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
 }
 
-.cid-info{
-  color:var(--muted);
-  font-size:12px;
-  line-height:1.6;
-  margin-bottom:15px;
+
+/* =========================================================
+   TWO COLUMN LAYOUT
+========================================================= */
+
+.cid-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  gap: 20px;
+  align-items: start;
+  width: 100%;
 }
 
-.cid-textarea{
-  width:100%;
-  min-height:350px;
-  resize:vertical;
-  border:1px solid var(--border);
-  background:#fafbfc;
-  border-radius:10px;
-  padding:12px;
-  outline:none;
-  font-family:var(--mono);
-  font-size:12px;
-  line-height:1.55;
+.cid-left,
+.cid-right {
+  min-width: 0;
+  width: 100%;
 }
 
-.cid-textarea:focus{
-  border-color:#93b4f8;
-  box-shadow:0 0 0 3px #eff6ff;
-  background:white;
+.cid-layout .form-title {
+  margin-bottom: 8px;
 }
 
-.cid-actions{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  margin-top:14px;
-  flex-wrap:wrap;
+
+/* INFORMATION TEXT */
+
+.cid-info {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  margin-bottom: 12px;
+  min-height: 40px;
+  box-sizing: border-box;
 }
 
-.cid-count{
-  color:var(--muted);
-  font-size:12px;
+
+/* =========================================================
+   RANDOM TEXT INPUT
+========================================================= */
+
+.cid-textarea {
+  display: block;
+  width: 100%;
+  height: 420px;
+  min-height: 420px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  background: #fafbfc;
+  border-radius: 10px;
+  padding: 12px;
+  margin: 0;
+  outline: none;
+  box-sizing: border-box;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.55;
 }
 
-.cid-output{
-  width:100%;
-  min-height:180px;
-  resize:vertical;
-  margin-top:15px;
-  border:1px solid #b7d9d0;
-  background:#f5fbf9;
-  border-radius:10px;
-  padding:12px;
-  outline:none;
-  font-family:var(--mono);
-  font-size:12px;
-  line-height:1.55;
-  color:#172033;
+.cid-textarea:focus {
+  border-color: #93b4f8;
+  box-shadow: 0 0 0 3px #eff6ff;
+  background: white;
 }
 
-.cid-output:focus{
-  border-color:#0f766e;
+
+/* =========================================================
+   EXTRACTED CID OUTPUT
+========================================================= */
+
+.cid-output {
+  display: block;
+  width: 100%;
+  height: 420px;
+  min-height: 420px;
+  resize: vertical;
+  margin: 0;
+  border: 1px solid #b7d9d0;
+  background: #f5fbf9;
+  border-radius: 10px;
+  padding: 12px;
+  outline: none;
+  box-sizing: border-box;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.65;
+  color: #172033;
+  white-space: pre;
+  overflow: auto;
 }
 
-.cid-copy{
-  background:#111827;
-  color:white;
+.cid-output:focus {
+  border-color: #0f766e;
 }
 
-.cid-copy:hover{
-  background:#000;
+
+/* =========================================================
+   EXTRACT, CLEAR AND COPY BUTTONS
+========================================================= */
+
+.cid-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.cid-count {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.cid-copy {
+  width: 100%;
+  background: #111827;
+  color: white;
+  justify-content: center;
+  text-align: center;
+  font-size: 12px;
+  padding: 10px 12px;
+  box-sizing: border-box;
+}
+
+.cid-copy:hover {
+  background: #000;
+}
+
+
+/* =========================================================
+   TRACKING SHEET UPLOAD SECTION
+========================================================= */
+
+.tracking-upload {
+  border-top: 1px solid var(--border, #d1d5db);
+  margin-top: 24px;
+  padding-top: 20px;
+}
+
+.tracking-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.tracking-description {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+
+/* TRACKING CONTROLS */
+
+.tracking-controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+
+/* DATE SELECTOR */
+
+.tracking-date-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tracking-date-wrap label {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tracking-date {
+  padding: 11px 14px;
+  border: 1px solid var(--border, #d1d5db);
+  border-radius: 8px;
+  background: #fafbfc;
+  color: #172033;
+  font: inherit;
+  outline: none;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.tracking-date:focus {
+  border-color: #93b4f8;
+  box-shadow: 0 0 0 3px #eff6ff;
+}
+
+
+/* =========================================================
+   TRACKING UPLOAD BUTTONS
+========================================================= */
+
+.tracking-btn {
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, opacity .15s;
+}
+
+
+/* YESTERDAY HOLD BUTTON */
+
+.tracking-yesterday {
+  background: #2563eb;
+}
+
+.tracking-yesterday:hover {
+  background: #1d4ed8;
+}
+
+
+/* MORNING RECEIVED BUTTON */
+
+.tracking-morning {
+  background: #15803d;
+}
+
+.tracking-morning:hover {
+  background: #166534;
+}
+
+
+/* DISABLED BUTTON */
+
+.tracking-btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+
+/* =========================================================
+   UPLOAD STATUS MESSAGES
+========================================================= */
+
+.tracking-msg {
+  display: none;
+  padding: 12px 14px;
+  margin-top: 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+
+/* SUCCESS MESSAGE */
+
+.tracking-msg.success {
+  display: block;
+  background: #dcfce7;
+  color: #166534;
+}
+
+
+/* ERROR MESSAGE */
+
+.tracking-msg.error {
+  display: block;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+
+/* UPLOADING MESSAGE */
+
+.tracking-msg.info {
+  display: block;
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+
+/* =========================================================
+   TABLET RESPONSIVE
+========================================================= */
+
+@media (max-width: 768px) {
+
+  .cid-card {
+    padding: 16px;
+  }
+
+  .cid-layout {
+    grid-template-columns: minmax(0, 1fr) 160px;
+    gap: 14px;
+  }
+
+  .cid-textarea,
+  .cid-output {
+    height: 350px;
+    min-height: 350px;
+  }
+
+  .cid-output {
+    font-size: 12px;
+    padding: 10px;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE RESPONSIVE
+========================================================= */
+
+@media (max-width: 520px) {
+
+  .cid-card {
+    padding: 12px;
+  }
+
+  .cid-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .cid-info {
+    min-height: auto;
+  }
+
+  .cid-textarea {
+    height: 300px;
+    min-height: 300px;
+  }
+
+  .cid-output {
+    height: 220px;
+    min-height: 220px;
+  }
+
+  .cid-copy {
+    width: 100%;
+  }
+
+  .tracking-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tracking-date {
+    width: 100%;
+  }
+
+  .tracking-btn {
+    width: 100%;
+  }
+
 }
