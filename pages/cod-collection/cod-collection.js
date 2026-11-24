@@ -9,7 +9,7 @@ const bdToday=()=>{const d=new Date(Date.now()+21600000);return d.getUTCFullYear
 const uid=()=>Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9);
 const parseMoney=s=>{if(!/^\d+(?:\.\d{1,2})?$/.test(String(s).trim()))return null;const v=Math.round(Number(s)*100);return Number.isSafeInteger(v)&&v>=0?v:null};
 const centsToInput=v=>(v/100).toFixed(2);
-const validDate=v=>/^\d{4}-\d{2}-\d{2}$/.test(v)&&!Number.isNaN(new Date(v+'T00:00:00+06:00').getTime());
+const validDate=v=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(v))return false;const time=new Date(v+'T00:00:00+06:00');return !Number.isNaN(time.getTime())&&new Date(time.getTime()+21600000).toISOString().slice(0,10)===v;};
 const DAY_MS=86400000, RETENTION_DAYS=30;
 const expiryMs=date=>new Date(date+'T00:00:00+06:00').getTime()+RETENTION_DAYS*DAY_MS;
 const isExpired=date=>!validDate(date)||expiryMs(date)<=Date.now();
@@ -125,7 +125,8 @@ async function loadCloud(){
   await workQueue;
   const snap=await cloudRef.get();
   if(uidNow!==loadedUid)return;
-  await cleanupExpired(cloudRef,snap.docs);
+  try { await cleanupExpired(cloudRef,snap.docs); }
+  catch(err) { console.warn('Expired COD cleanup skipped; Firestore TTL can delete later:',err); }
   const loaded={version:1,days:{}};
   const versions={};
   for(const doc of snap.docs){
@@ -195,8 +196,12 @@ function addPaymentForm(container,callback){const f=el('form','cod-entry-form');
 function table(payments,onRemove){const scroll=el('div','cod-table-scroll'),tab=el('table','cod-table'),thead=el('thead'),head=el('tr');['Method','Amount','Reference','Action'].forEach(h=>head.append(el('th','',h)));thead.append(head);tab.append(thead);const body=el('tbody');if(!payments.length){const row=el('tr'),td=el('td','cod-empty','No payments recorded');td.colSpan=4;row.append(td);body.append(row);}payments.forEach(p=>{const row=el('tr');[p.method,money(p.amount),p.reference||'—'].forEach(t=>row.append(el('td','',t)));const action=el('td');action.append(button('Remove',()=>onRemove(p.id),'cod-danger'));row.append(action);body.append(row);});tab.append(body);scroll.append(tab);return scroll;}
 function render(){
 const d=current(),target=x('codRiders');target.replaceChildren();
+let updatedSent=false;
 for(const r of d.riders){
-try { const ack=JSON.parse(localStorage.getItem('adjoy:cod-km-sent:v1')||'{}'); if(ack['cod-'+today()+'-'+r.id])r.sent=true; }catch(e){}
+try {
+  const ack=JSON.parse(localStorage.getItem('adjoy:cod-km-sent:v1')||'{}');
+  if(!r.sent&&ack['cod-'+today()+'-'+r.id]){r.sent=true;updatedSent=true;}
+}catch(e){}
 const card=el('article','cod-rider'),top=el('div','cod-rider-head'),title=el('h3','',r.name),actions=el('div','cod-rider-actions');const {paid,diff}=sums(r);
 actions.append(button('Send Due to KM',()=>sendToKM(r.id)));actions.append(button('Remove Rider',()=>{if(r.payments.length||r.cod){if(!confirm('Delete '+r.name+' and all related daily entries?'))return;}d.riders=d.riders.filter(a=>a.id!==r.id);persist();render();},'cod-danger'));top.append(title,actions);card.append(top);
 const fields=el('div','cod-rider-fields');
@@ -210,6 +215,7 @@ addPaymentForm(card,p=>{r.payments.push(p);persist();render();});target.append(c
 let total=0,collected=0,due=0,over=0;for(const r of d.riders){const s=sums(r);total+=r.cod;collected+=s.paid;due+=Math.max(0,s.diff);over+=Math.max(0,-s.diff);}
 const agent=d.agent.reduce((n,p)=>n+p.amount,0);for(const [id,n] of [['codTotal',total],['codCollected',collected],['codDue',due],['codOver',over],['agentPaid',agent]])x(id).textContent=money(n);
 const balance=collected-agent;x('agentBalance').textContent=(balance<0?'Overpaid ':'')+money(Math.abs(balance));x('agentBalance').style.color=balance<0?'#dc2626':'#172442';x('agentReconcile').textContent=balance>0?'Collect money held for agent: '+money(balance):balance<0?'Agent received '+money(-balance)+' more than recorded rider collections.':'All recorded collections have been settled with agent.';
+if(updatedSent)persist();
 const at=x('agentRows');at.replaceChildren();if(!d.agent.length){const tr=el('tr'),td=el('td','cod-empty','No agent payments recorded');td.colSpan=4;tr.append(td);at.append(tr);}for(const p of d.agent){const tr=el('tr');[p.method,money(p.amount),p.reference||'—'].forEach(v=>tr.append(el('td','',v)));const td=el('td');td.append(button('Remove',()=>{if(!confirm('Remove agent payment?'))return;d.agent=d.agent.filter(z=>z.id!==p.id);persist();render();},'cod-danger'));tr.append(td);at.append(tr);}
 }
 function sendToKM(id){const r=current().riders.find(z=>z.id===id);if(!r)return;
