@@ -3,7 +3,7 @@
 <title>COD Collection · AD JOY PANEL</title>
 <link rel="stylesheet" href="../../assets/css/base.css">
 <link rel="stylesheet" href="../../assets/css/panel-theme.css">
-<link rel="stylesheet" href="cod-collection.css?v=20261124-mobile-rider-dropdown-2">
+<link rel="stylesheet" href="cod-collection.css?v=20261124-transfer-edit-1">
 </head><body class="cod-locked"><main class="page-content">
 <header class="page-head"><div><h1 class="page-title">COD Collection</h1>
 <p class="page-sub">Rider collection and payment-agent settlement · Firebase-synced daily ledger</p></div></header>
@@ -39,6 +39,23 @@
   </div>
   <div id="codRiders" class="cod-riders"></div>
 </section>
+<section class="card cod-section cod-transfer-section" aria-labelledby="codTransferHeading">
+  <div class="cod-section-head"><div><h2 id="codTransferHeading">Transfer Parcel COD</h2>
+  <span>Move COD between riders. Total Panel COD stays unchanged.</span></div></div>
+  <form id="codTransferForm" class="cod-transfer-form">
+    <label>From Rider<select id="codTransferFrom" required></select></label>
+    <label>To Rider<select id="codTransferTo" required></select></label>
+    <label>Transfer Amount (BDT)<input id="codTransferAmount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0.00" required></label>
+    <label>Parcel CID / Unique Reference<input id="codTransferRef" type="text" maxlength="120" required placeholder="Parcel ID or unique batch reference"></label>
+    <div class="cod-transfer-actions">
+      <button class="btn btn-primary" id="codTransferSubmit" type="submit">Transfer COD</button>
+      <button class="btn btn-light" id="codTransferCancel" type="button" hidden>Cancel Edit</button>
+    </div>
+  </form>
+  <p class="cod-transfer-hint">The amount is deducted from the source rider and added to the destination. Enter a unique parcel CID/reference to stop accidental repeated transfers.</p>
+  <h3 class="cod-subtitle">Transfer History</h3>
+  <div id="codTransferHistory" class="cod-transfer-history"></div>
+</section>
 <section class="card cod-section"><div class="cod-section-head"><h2>Payment Agent Settlement</h2><span>Record each cash or online transfer</span></div>
 <form id="agentForm" class="cod-entry-form">
 <label>Method<select id="agentMethod"><option>Cash</option><option>bKash</option><option>Nagad</option><option>Rocket</option><option>Bank Transfer</option><option>Other</option></select></label>
@@ -49,8 +66,17 @@
 <p class="cod-foot" id="agentReconcile"></p>
 </section>
 <div id="codMessage" role="status" aria-live="polite" class="cod-message"></div>
+<dialog id="codEditDialog" class="cod-edit-dialog">
+<form id="codEditForm" class="cod-edit-form">
+  <h2 id="codEditHeading">Edit Payment</h2>
+  <label>Payment Method<select id="codEditMethod"></select></label>
+  <label>Amount (BDT)<input id="codEditAmount" inputmode="decimal" type="number" min="0.01" step="0.01" required></label>
+  <label>Transaction / Reference<input id="codEditReference" maxlength="140" type="text"></label>
+  <div class="cod-dialog-actions"><button type="button" id="codEditCancel" class="btn btn-light">Cancel</button><button class="btn btn-primary" type="submit">Save Changes</button></div>
+</form>
+</dialog>
 </main>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="cod-collection.js?v=20261124-mobile-rider-dropdown-2"></script></body></html>
+<script src="cod-collection.js?v=20261124-transfer-edit-1"></script></body></html>
