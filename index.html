@@ -368,6 +368,15 @@ html, body {
   box-shadow: 0 0 0 3px #eff6ff;
 }
 
+/* LAST IMPORTED CSV SNAPSHOT */
+.workspace-snapshot { display:flex; flex-direction:column; gap:10px; }
+.workspace-snapshot #snapshotTitle { overflow-wrap:anywhere; font-size:14px; }
+.snapshot-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+.snapshot-metrics > div { background:#f4f7fc; border-radius:10px; padding:11px; font-size:12px; color:#6d7b94; }
+.snapshot-metrics strong { display:block; margin-top:5px; color:#172442; font-size:23px; }
+.snapshot-clear { align-self:flex-start; border:1px solid #dce3f2; padding:8px 11px; border-radius:8px; color:#5262a3; background:#f5f7fd; cursor:pointer; }
+.snapshot-clear:hover { background:#e8edfc; }
+
 .workspace-quote {
   text-align: center;
   background: #e8edfc;
@@ -729,12 +738,16 @@ html, body {
     order: 3;
   }
 
-  .workspace-quote {
+  .workspace-snapshot {
     order: 4;
   }
 
-  .workspace footer {
+  .workspace-quote {
     order: 5;
+  }
+
+  .workspace footer {
+    order: 6;
   }
 
   .workspace-left > *,
@@ -1162,6 +1175,25 @@ html, body {
         </div>
 
 
+        <!-- LAST IMPORTED PARCEL CSV (NOT REALTIME) -->
+        <section class="workspace-card workspace-snapshot" aria-label="Last imported CSV summary">
+          <div class="workspace-label">Last imported parcel CSV</div>
+          <strong id="snapshotTitle">No CSV imported yet</strong>
+          <div class="workspace-account" id="snapshotTime">
+            Import a CSV in Parcel Panel to see a summary here.
+          </div>
+          <div class="snapshot-metrics" id="snapshotMetrics" hidden>
+            <div>Total <strong id="snapshotTotal">0</strong></div>
+            <div>Delivered <strong id="snapshotDelivered">0</strong></div>
+            <div>Hold <strong id="snapshotHold">0</strong></div>
+            <div>Return / Exchange <strong id="snapshotReturn">0</strong></div>
+          </div>
+          <div class="workspace-account" id="snapshotOther"></div>
+          <button type="button" id="snapshotClear" class="snapshot-clear" hidden>
+            Clear saved summary
+          </button>
+        </section>
+
         <!-- DAILY QUOTE -->
 
         <div
@@ -1333,6 +1365,51 @@ html, body {
 
 
 <script>
+
+/* CSV SNAPSHOT — NO LIVE OR SERVER DATA */
+function renderParcelSnapshot() {
+  const get = id => document.getElementById(id);
+  let value = null;
+  try {
+    const raw = localStorage.getItem('opsLatestParcelSnapshot');
+    value = raw ? JSON.parse(raw) : null;
+  } catch (err) {}
+
+  const valid = value && value.version === 1 &&
+    Number.isFinite(value.total) && value.total >= 0;
+  get('snapshotMetrics').hidden = !valid;
+  get('snapshotClear').hidden = !valid;
+  if (!valid) {
+    get('snapshotTitle').textContent = 'No CSV imported yet';
+    get('snapshotTime').textContent = 'Import a CSV in Parcel Panel to see a summary here.';
+    get('snapshotOther').textContent = '';
+    return;
+  }
+
+  get('snapshotTitle').textContent = value.fileName || 'Parcel CSV';
+  const when = new Date(value.importedAt);
+  get('snapshotTime').textContent = Number.isNaN(when.getTime())
+    ? 'Previously imported CSV (not live)'
+    : 'Imported ' + when.toLocaleString('en-GB', {
+        timeZone:'Asia/Dhaka', dateStyle:'medium', timeStyle:'short'
+      }) + ' (Bangladesh time) · CSV snapshot, not live';
+  for (const [id, key] of [
+    ['snapshotTotal','total'],
+    ['snapshotDelivered','delivered'],
+    ['snapshotHold','hold'],
+    ['snapshotReturn','return']
+  ]) get(id).textContent = Number(value[key] || 0).toLocaleString('en-US');
+  get('snapshotOther').textContent = 'Other / Assigned: ' +
+    Number(value.other || 0).toLocaleString('en-US');
+}
+document.getElementById('snapshotClear').addEventListener('click', () => {
+  if (!confirm('Clear the saved CSV summary? This will not affect the original CSV or Sheet.')) return;
+  try { localStorage.removeItem('opsLatestParcelSnapshot'); } catch (err) {}
+  renderParcelSnapshot();
+});
+window.addEventListener('storage', e => {
+  if (e.key === 'opsLatestParcelSnapshot') renderParcelSnapshot();
+});
 
 /* =========================================================
    FIREBASE CONFIGURATION
@@ -2068,6 +2145,7 @@ function initWorkspace(user) {
   stopWorkspace();
 
   initTodo(user);
+  renderParcelSnapshot();
 
   const el = id => document.getElementById(id);
 
@@ -2505,6 +2583,7 @@ function initPanel() {
   function renderRoute(page) {
 
     if (!fbAuth.currentUser) return;
+    if (!page) renderParcelSnapshot();
 
     MobileMenu.close();
 
