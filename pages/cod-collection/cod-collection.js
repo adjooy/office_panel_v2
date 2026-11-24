@@ -25,7 +25,9 @@ function addPaymentForm(container,callback){const f=el('form','cod-entry-form');
 function table(payments,onRemove){const scroll=el('div','cod-table-scroll'),tab=el('table','cod-table'),thead=el('thead'),head=el('tr');['Method','Amount','Reference','Action'].forEach(h=>head.append(el('th','',h)));thead.append(head);tab.append(thead);const body=el('tbody');if(!payments.length){const row=el('tr'),td=el('td','cod-empty','No payments recorded');td.colSpan=4;row.append(td);body.append(row);}payments.forEach(p=>{const row=el('tr');[p.method,money(p.amount),p.reference||'—'].forEach(t=>row.append(el('td','',t)));const action=el('td');action.append(button('Remove',()=>onRemove(p.id),'cod-danger'));row.append(action);body.append(row);});tab.append(body);scroll.append(tab);return scroll;}
 function render(){
 const d=current(),target=x('codRiders');target.replaceChildren();
-for(const r of d.riders){const card=el('article','cod-rider'),top=el('div','cod-rider-head'),title=el('h3','',r.name),actions=el('div','cod-rider-actions');const {paid,diff}=sums(r);
+for(const r of d.riders){
+try { const ack=JSON.parse(localStorage.getItem('adjoy:cod-km-sent:v1')||'{}'); if(ack['cod-'+today()+'-'+r.id])r.sent=true; }catch(e){}
+const card=el('article','cod-rider'),top=el('div','cod-rider-head'),title=el('h3','',r.name),actions=el('div','cod-rider-actions');const {paid,diff}=sums(r);
 actions.append(button('Send Due to KM',()=>sendToKM(r.id)));actions.append(button('Remove Rider',()=>{if(r.payments.length||r.cod){if(!confirm('Delete '+r.name+' and all related daily entries?'))return;}d.riders=d.riders.filter(a=>a.id!==r.id);persist();render();},'cod-danger'));top.append(title,actions);card.append(top);
 const fields=el('div','cod-rider-fields');
 fields.append(field('Rider name',r.name,(v,inp)=>{if(!v.trim()){inp.value=r.name;return;}r.name=v.trim().slice(0,90);persist();render();}));
@@ -40,7 +42,13 @@ const agent=d.agent.reduce((n,p)=>n+p.amount,0);for(const [id,n] of [['codTotal'
 const balance=collected-agent;x('agentBalance').textContent=(balance<0?'Overpaid ':'')+money(Math.abs(balance));x('agentBalance').style.color=balance<0?'#dc2626':'#172442';x('agentReconcile').textContent=balance>0?'Collect money held for agent: '+money(balance):balance<0?'Agent received '+money(-balance)+' more than recorded rider collections.':'All recorded collections have been settled with agent.';
 const at=x('agentRows');at.replaceChildren();if(!d.agent.length){const tr=el('tr'),td=el('td','cod-empty','No agent payments recorded');td.colSpan=4;tr.append(td);at.append(tr);}for(const p of d.agent){const tr=el('tr');[p.method,money(p.amount),p.reference||'—'].forEach(v=>tr.append(el('td','',v)));const td=el('td');td.append(button('Remove',()=>{if(!confirm('Remove agent payment?'))return;d.agent=d.agent.filter(z=>z.id!==p.id);persist();render();},'cod-danger'));tr.append(td);at.append(tr);}
 }
-function sendToKM(id){const r=current().riders.find(z=>z.id===id);if(!r)return;const amount=sums(r).diff;if(amount<=0)return alert('No outstanding COD due for this rider.');if(r.sent)return alert('Due was already sent for this rider/date. Adjust previously sent entry manually in KM Tracker.');const message='Record COD outstanding '+money(amount)+' for '+r.name+' on '+today()+' as a deduction from the rider KM balance? This is NOT a new KM earning and will not auto-adjust if you later collect more COD.';if(!confirm(message))return;
+function sendToKM(id){const r=current().riders.find(z=>z.id===id);if(!r)return;
+const sourceId='cod-'+today()+'-'+r.id;
+try{
+  const ack=JSON.parse(localStorage.getItem('adjoy:cod-km-sent:v1')||'{}');
+  if(ack[sourceId])r.sent=true;
+}catch(e){}
+const amount=sums(r).diff;if(amount<=0)return alert('No outstanding COD due for this rider.');if(r.sent)return alert('Due was already sent for this rider/date. Adjust previously sent entry manually in KM Tracker.');const message='Record COD outstanding '+money(amount)+' for '+r.name+' on '+today()+' as a deduction from the rider KM balance? This is NOT a new KM earning and will not auto-adjust if you later collect more COD.';if(!confirm(message))return;
 const payload={version:1,sourceId:'cod-'+today()+'-'+r.id,riderName:r.name,date:today(),amountCents:amount,createdAt:Date.now()};try{sessionStorage.setItem('adjoy:cod-km-handoff:v1',JSON.stringify(payload));}catch(e){return alert('Browser session storage unavailable.');}
 const route='#page='+encodeURIComponent('pages/rider-km-tracker/rider-km-tracker.html');try{if(window.parent!==window&&window.parent.location.origin===window.location.origin)window.parent.location.hash=route;else location.href='../rider-km-tracker/rider-km-tracker.html';}catch(e){location.href='../rider-km-tracker/rider-km-tracker.html';}}
 x('codDate').addEventListener('change',()=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(today()))return;render();});
