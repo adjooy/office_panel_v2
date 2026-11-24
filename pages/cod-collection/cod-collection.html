@@ -4,16 +4,17 @@
 <link rel="stylesheet" href="../../assets/css/base.css">
 <link rel="stylesheet" href="cod-collection.css">
 <link rel="stylesheet" href="../../assets/css/panel-theme.css">
-</head><body><main class="page-content">
+</head><body class="cod-locked"><main class="page-content">
 <header class="page-head"><div><h1 class="page-title">COD Collection</h1>
-<p class="page-sub">Rider collection and payment-agent settlement · Offline daily ledger</p></div></header>
+<p class="page-sub">Rider collection and payment-agent settlement · Firebase-synced daily ledger</p></div></header>
 <div class="cod-toolbar card"><label>Work Date<input id="codDate" type="date"></label>
 <button class="btn btn-light" id="codAddRider">+ Add Rider</button>
+<button class="btn btn-light" id="codRefresh">Refresh Cloud</button>
 <button class="btn btn-light" id="codExport">Export CSV</button>
 <button class="btn btn-light" id="codBackup">Backup JSON</button>
 <label class="btn btn-light cod-import">Restore JSON<input id="codRestore" type="file" accept="application/json,.json"></label>
 </div>
-<div class="cod-notice">Saved in this browser only. No real-time synchronization. Use Backup JSON regularly. Rider Due sent to KM Tracker represents a deduction from KM balance; send only once after reviewing.</div>
+<div class="cod-notice"><strong id="codCloudStatus">Connecting to Firebase...</strong> <span>Daily records sync to Firestore. Data expires 30 days after its work date (Asia/Dhaka). Enable Firestore TTL for automatic deletion even when the panel is closed. Use Backup JSON before expiry if needed. COD Due sent to KM Tracker is a deduction, not KM earnings.</span></div>
 <section class="cod-summary" aria-live="polite">
 <div class="card"><small>Panel COD</small><strong id="codTotal">৳0.00</strong></div>
 <div class="card"><small>Rider Collected</small><strong id="codCollected">৳0.00</strong></div>
@@ -34,4 +35,8 @@
 <p class="cod-foot" id="agentReconcile"></p>
 </section>
 <div id="codMessage" role="status" aria-live="polite" class="cod-message"></div>
-</main><script src="cod-collection.js"></script></body></html>
+</main>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="cod-collection.js"></script></body></html>
