@@ -16,7 +16,7 @@ const isExpired=date=>!validDate(date)||expiryMs(date)<=Date.now();
 const clone=v=>JSON.parse(JSON.stringify(v));
 function notice(s){x('codMessage').textContent=s;}
 function cloudStatus(s){x('codCloudStatus').textContent=s;}
-function defaultDay(){return {riders:Array.from({length:5},(_,i)=>({id:uid(),name:'Rider '+(i+1),cod:0,payments:[],remarks:'',sent:false})),agent:[]};}
+function defaultDay(){return {riders:Array.from({length:5},(_,i)=>({id:uid(),name:'Rider '+(i+1),cod:0,payments:[],remarks:'',sent:false})),agent:[],transfers:[]};}
 const firebaseConfig = {
   apiKey: "AIzaSyADm297kotJhrGe_TbM9dZCktoFDVBIIr4",
   authDomain: "adjoy-rider-tracker.firebaseapp.com",
@@ -75,6 +75,18 @@ function validateDay(v){
   }
   if(v.agent.length>2500)throw Error('Too many payments in one day');
   for(const p of v.agent)validatePayment(p);
+  if(v.transfers!==undefined){
+    if(!Array.isArray(v.transfers)||v.transfers.length>3000)throw Error('Invalid COD transfers');
+    const refs=new Set(),ids=new Set();
+    for(const t of v.transfers){
+      if(!t||typeof t.id!=='string'||ids.has(t.id)||
+        !riders.has(t.fromId)||!riders.has(t.toId)||t.fromId===t.toId||
+        !Number.isSafeInteger(t.amount)||t.amount<=0||
+        typeof t.reference!=='string'||!t.reference.trim()||t.reference.length>120||
+        refs.has(t.reference.trim().toUpperCase()))throw Error('Invalid/duplicate COD transfer');
+      refs.add(t.reference.trim().toUpperCase());ids.add(t.id);
+    }
+  }
 }
 function validatePayment(p){
   if(!p||typeof p.id!=='string'||!Number.isSafeInteger(p.amount)||
@@ -96,7 +108,7 @@ function persist(){
       const revision=snap.exists?Number(snap.data().revision||0):0;
       if(revision!==baseline)throw Error('This date changed on another device. Export a backup and refresh the cloud data before editing.');
       tx.set(ref,{
-        date,riders:data.riders,agent:data.agent,
+        date,riders:data.riders,agent:data.agent,transfers:data.transfers||[],
         revision:revision+1,
         expiresAt:firebase.firestore.Timestamp.fromMillis(expiryMs(date)),
         updatedAt:firebase.firestore.FieldValue.serverTimestamp()
@@ -134,7 +146,7 @@ async function loadCloud(){
     const value=doc.data();
     if(!value||!Array.isArray(value.riders)||!Array.isArray(value.agent))continue;
     validateDay(value);
-    loaded.days[doc.id]={riders:value.riders,agent:value.agent};
+    loaded.days[doc.id]={riders:value.riders,agent:value.agent,transfers:value.transfers||[]};
     versions[doc.id]=Number(value.revision||0);
   }
   // First-time migration of the old local-only COD ledger. Existing cloud
@@ -149,7 +161,7 @@ async function loadCloud(){
       const remote=await tx.get(ref);
       if(remote.exists)return false;
       tx.set(ref,{
-        date,riders:value.riders,agent:value.agent,
+        date,riders:value.riders,agent:value.agent,transfers:value.transfers||[],
         revision:1,
         expiresAt:firebase.firestore.Timestamp.fromMillis(expiryMs(date)),
         updatedAt:firebase.firestore.FieldValue.serverTimestamp()
@@ -161,7 +173,7 @@ async function loadCloud(){
       const remote=await ref.get();
       if(remote.exists){
         const valueRemote=remote.data();
-        loaded.days[date]={riders:valueRemote.riders,agent:valueRemote.agent};
+        loaded.days[date]={riders:valueRemote.riders,agent:valueRemote.agent,transfers:valueRemote.transfers||[]};
         versions[date]=Number(valueRemote.revision||0);
       }
     }
@@ -188,12 +200,43 @@ fbAuth.onAuthStateChanged(async user=>{
     notice('Cloud access unavailable. Your existing browser data has not been deleted.');
   }
 });
+/* COD transfers are offsets, never new COD: incoming - outgoing = zero globally. */
+function transfersOf(day){return Array.isArray(day.transfers)?day.transfers:[];}
+function effectiveCOD(day,riderId,excludingId=null){
+  const rider=day.riders.find(r=>r.id===riderId);
+  if(!rider)return 0;
+  let net=rider.cod;
+  for(const t of transfersOf(day)){
+    if(t.id===excludingId)continue;
+    if(t.fromId===riderId)net-=t.amount;
+    if(t.toId===riderId)net+=t.amount;
+  }
+  return net;
+}
+function transferStatus(day){
+  const base=day.riders.reduce((n,r)=>n+r.cod,0);
+  const effective=day.riders.reduce((n,r)=>n+effectiveCOD(day,r.id),0);
+  return {base,effective};
+}
+function safeTransfer(day,t,excludingId=null){
+  const validIds=new Set(day.riders.map(r=>r.id));
+  if(!validIds.has(t.fromId)||!validIds.has(t.toId)||t.fromId===t.toId)
+    return 'Choose two different riders.';
+  if(!Number.isSafeInteger(t.amount)||t.amount<=0)return 'Enter a valid transfer amount.';
+  if(!t.reference||!t.reference.trim())return 'Parcel CID / unique reference is required.';
+  if(transfersOf(day).some(other=>other.id!==excludingId &&
+      other.reference.trim().toUpperCase()===t.reference.trim().toUpperCase()))
+    return 'This parcel CID / reference has already been transferred today.';
+  if(effectiveCOD(day,t.fromId,excludingId)<t.amount)
+    return 'Transfer exceeds available COD of the source rider.';
+  return null;
+}
 function sums(r){const paid=r.payments.reduce((n,p)=>n+p.amount,0);return {paid,diff:r.cod-paid};}
 function el(tag,cls,content){const a=document.createElement(tag);if(cls)a.className=cls;if(content!==undefined)a.textContent=content;return a;}
 function button(label,fn,cls=''){const b=el('button','cod-action '+cls,label);b.type='button';b.addEventListener('click',fn);return b;}
 function field(label,value,handler,type='text'){const wrap=el('label');wrap.append(el('span','',label));const input=el('input');input.type=type;input.value=value;input.addEventListener('change',()=>handler(input.value,input));wrap.append(input);return wrap;}
 function addPaymentForm(container,callback){const f=el('form','cod-entry-form');const method=el('select');for(const m of methods){const o=el('option','',m);o.value=m;method.append(o);}const amount=el('input');amount.type='number';amount.min='.01';amount.step='.01';amount.placeholder='0.00';amount.required=true;const ref=el('input');ref.maxLength=140;ref.placeholder='Reference / note';for(const [label,input] of [['Method',method],['Amount (BDT)',amount],['Reference',ref]]){const wrap=el('label');wrap.append(el('span','',label),input);f.append(wrap);}const b=el('button','btn btn-primary','+ Add Payment');b.type='submit';f.append(b);f.addEventListener('submit',e=>{e.preventDefault();const v=parseMoney(amount.value);if(v===null||v<=0)return alert('Enter a valid positive amount (maximum two decimals).');callback({id:uid(),method:method.value,amount:v,reference:ref.value.trim().slice(0,140)});f.reset();});container.append(f);}
-function table(payments,onRemove){const scroll=el('div','cod-table-scroll'),tab=el('table','cod-table'),thead=el('thead'),head=el('tr');['Method','Amount','Reference','Action'].forEach(h=>head.append(el('th','',h)));thead.append(head);tab.append(thead);const body=el('tbody');if(!payments.length){const row=el('tr'),td=el('td','cod-empty','No payments recorded');td.colSpan=4;row.append(td);body.append(row);}payments.forEach(p=>{const row=el('tr');[p.method,money(p.amount),p.reference||'—'].forEach(t=>row.append(el('td','',t)));const action=el('td');action.append(button('Remove',()=>onRemove(p.id),'cod-danger'));row.append(action);body.append(row);});tab.append(body);scroll.append(tab);return scroll;}
+function table(payments,onRemove,onEdit){const scroll=el('div','cod-table-scroll'),tab=el('table','cod-table'),thead=el('thead'),head=el('tr');['Method','Amount','Reference','Action'].forEach(h=>head.append(el('th','',h)));thead.append(head);tab.append(thead);const body=el('tbody');if(!payments.length){const row=el('tr'),td=el('td','cod-empty','No payments recorded');td.colSpan=4;row.append(td);body.append(row);}payments.forEach(p=>{const row=el('tr');[p.method,money(p.amount),p.reference||'—'].forEach(t=>row.append(el('td','',t)));const action=el('td');action.append(button('Edit',()=>onEdit(p.id)));action.append(button('Remove',()=>onRemove(p.id),'cod-danger'));row.append(action);body.append(row);});tab.append(body);scroll.append(tab);return scroll;}
 let selectedRiderId = null;
 let selectedRiderDate = null;
 
@@ -221,7 +264,7 @@ function render(){
   let total=0,collected=0,cash=0,online=0,due=0,over=0;
   for(const r of d.riders){
     const s=sums(r);
-    total+=r.cod; collected+=s.paid;
+    total+=effectiveCOD(d,r.id); collected+=s.paid;
     due+=Math.max(0,s.diff);over+=Math.max(0,-s.diff);
     for(const p of r.payments){
       if(p.method==='Cash')cash+=p.amount;
@@ -259,7 +302,8 @@ function render(){
       if(!r.sent&&ack['cod-'+date+'-'+r.id]){r.sent=true;persist();}
     }catch(err){}
 
-    const {paid,diff}=sums(r);
+    const {paid}=sums(r);
+    const riderCOD=effectiveCOD(d,r.id),diff=riderCOD-paid;
     const paidCash=r.payments.filter(p=>p.method==='Cash').reduce((n,p)=>n+p.amount,0);
     const paidOnline=paid-paidCash;
     const status=diff>0?'Due '+money(diff):diff<0?'Overpaid '+money(-diff):'Fully settled';
@@ -271,6 +315,9 @@ function render(){
     actions.append(button('Send Due to KM',()=>sendToKM(r.id)));
     actions.append(button('Remove Rider',()=>{
       if(!confirm('Remove '+r.name+' and all the entries for this work date?'))return;
+      if(transfersOf(d).some(t=>t.fromId===r.id||t.toId===r.id)){
+        alert('This rider has COD transfers. Remove or edit those transfers before deleting the rider.');return;
+      }
       d.riders=d.riders.filter(item=>item.id!==r.id);
       selectedRiderId=null;persist();render();
     },'cod-danger'));
@@ -280,14 +327,17 @@ function render(){
     fields.append(field('Panel COD (BDT)',centsToInput(r.cod),(v,inp)=>{
       const n=parseMoney(v);
       if(n===null){alert('Invalid amount');inp.value=centsToInput(r.cod);return;}
-      r.cod=n;persist();render();
+      if(n!==r.cod && n<0){alert('Invalid COD amount');return;}
+      const old=r.cod;r.cod=n;
+      if(effectiveCOD(d,r.id)<0){r.cod=old;alert('COD would fall below transfers already sent from this rider. Edit a transfer first.');inp.value=centsToInput(old);return;}
+      persist();render();
     },'number'));
     fields.append(field('Remarks',r.remarks,(v)=>{r.remarks=v.slice(0,300);persist();},'text'));
     card.append(fields);
 
     const metrics=el('div','cod-rider-metrics');
     for(const [name,val,extra] of [
-      ['Panel COD',r.cod,''],
+      ['Panel COD',riderCOD,''],
       ['Cash',paidCash,''],
       ['Online',paidOnline,''],
       ['Total Paid',paid,''],
@@ -299,7 +349,7 @@ function render(){
     }
     card.append(metrics);
     if(diff>0)card.append(el('p','cod-due-explainer',
-      'Outstanding: '+money(r.cod)+' Panel COD − '+money(paid)+' collected = '+money(diff)+' still due.'));
+      'Outstanding: '+money(riderCOD)+' assigned COD − '+money(paid)+' collected = '+money(diff)+' still due.'));
     else if(diff<0)card.append(el('p','cod-due-explainer cod-paid-note',
       'Overpaid by '+money(-diff)+'. Please verify the extra payment.'));
     else card.append(el('p','cod-due-explainer cod-paid-note','All COD for this rider has been collected.'));
@@ -311,12 +361,13 @@ function render(){
       if(!confirm('Remove this payment?'))return;
       r.payments=r.payments.filter(p=>p.id!==id);
       persist();render();
-    }));
+    },id=>openEditPayment('rider',r.id,id)));
     card.append(el('h4','cod-subtitle','Add Cash or Online Payment'));
     addPaymentForm(card,p=>{r.payments.push(p);persist();render();});
     target.append(card);
   }
 
+  renderTransferUI(d);
   const at=x('agentRows');
   at.replaceChildren();
   if(!d.agent.length){
@@ -327,6 +378,7 @@ function render(){
     const tr=el('tr');
     [p.method,money(p.amount),p.reference||'—'].forEach(v=>tr.append(el('td','',v)));
     const td=el('td');
+    td.append(button('Edit',()=>openEditPayment('agent',null,p.id)));
     td.append(button('Remove',()=>{
       if(!confirm('Remove agent payment?'))return;
       d.agent=d.agent.filter(z=>z.id!==p.id);persist();render();
@@ -344,7 +396,7 @@ try{
   const ack=JSON.parse(localStorage.getItem('adjoy:cod-km-sent:v1')||'{}');
   if(ack[sourceId])r.sent=true;
 }catch(e){}
-const amount=sums(r).diff;if(amount<=0)return alert('No outstanding COD due for this rider.');if(r.sent)return alert('Due was already sent for this rider/date. Adjust previously sent entry manually in KM Tracker.');const message='Record COD outstanding '+money(amount)+' for '+r.name+' on '+today()+' as a deduction from the rider KM balance? This is NOT a new KM earning and will not auto-adjust if you later collect more COD.';if(!confirm(message))return;
+const amount=effectiveCOD(current(),r.id)-sums(r).paid;if(amount<=0)return alert('No outstanding COD due for this rider.');if(r.sent)return alert('Due was already sent for this rider/date. Adjust previously sent entry manually in KM Tracker.');const message='Record COD outstanding '+money(amount)+' for '+r.name+' on '+today()+' as a deduction from the rider KM balance? This is NOT a new KM earning and will not auto-adjust if you later collect more COD.';if(!confirm(message))return;
 const payload={version:1,sourceId:'cod-'+today()+'-'+r.id,riderName:r.name,date:today(),amountCents:amount,createdAt:Date.now()};try{sessionStorage.setItem('adjoy:cod-km-handoff:v1',JSON.stringify(payload));}catch(e){return alert('Browser session storage unavailable.');}
 const route='#page='+encodeURIComponent('pages/rider-km-tracker/rider-km-tracker.html');try{if(window.parent!==window&&window.parent.location.origin===window.location.origin)window.parent.location.hash=route;else location.href='../rider-km-tracker/rider-km-tracker.html';}catch(e){location.href='../rider-km-tracker/rider-km-tracker.html';}}
 x('codDate').addEventListener('change',()=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(today()))return;render();});
@@ -371,7 +423,7 @@ x('codRestore').addEventListener('change',async e=>{
         const snap=await tx.get(ref);
         if(snap.exists)return false;
         tx.set(ref,{
-          date,riders:value.riders,agent:value.agent,revision:1,
+          date,riders:value.riders,agent:value.agent,transfers:value.transfers||[],revision:1,
           expiresAt:firebase.firestore.Timestamp.fromMillis(expiryMs(date)),
           updatedAt:firebase.firestore.FieldValue.serverTimestamp()
         });
