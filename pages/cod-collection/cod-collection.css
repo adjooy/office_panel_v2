@@ -2,7 +2,7 @@
 @media(max-width:930px){.cod-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.cod-entry-form,.cod-rider .cod-entry-form{grid-template-columns:1fr 1fr}.cod-entry-form button{width:100%}.cod-rider-fields{grid-template-columns:1fr 1fr}.cod-rider-fields label:last-child{grid-column:1/-1}}
 @media(max-width:520px){.cod-summary{gap:8px}.cod-summary .card{padding:12px}.cod-rider{padding:12px}.cod-rider-fields{grid-template-columns:1fr}.cod-rider-fields label:last-child{grid-column:auto}.cod-entry-form,.cod-rider .cod-entry-form{grid-template-columns:1fr 1fr}.cod-entry-form label:nth-child(3){grid-column:1/-1}.cod-entry-form button{grid-column:1/-1}.cod-section{padding:12px}.cod-rider-summary{gap:9px}}
 /* Prevent financial edits while cloud data is loading or in conflict. */
-body.cod-locked .page-content{pointer-events:none;opacity:.72}
+body.cod-locked #codRiders,body.cod-locked #agentForm,body.cod-locked #agentRows,body.cod-locked #codAddRider{pointer-events:none;opacity:.55}
 #codCloudStatus{display:block;color:#344d97;font-weight:800;margin-bottom:5px}
 #codMessage{white-space:pre-wrap}
 @media (max-width:520px){.cod-toolbar label:first-child{min-width:100%}}
