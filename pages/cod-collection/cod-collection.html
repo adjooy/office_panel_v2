@@ -15,16 +15,30 @@
 <label class="btn btn-light cod-import">Restore JSON<input id="codRestore" type="file" accept="application/json,.json"></label>
 </div>
 <div class="cod-notice"><strong id="codCloudStatus">Connecting to Firebase...</strong> <span>Daily records sync to Firestore. Data expires 30 days after its work date (Asia/Dhaka). Enable Firestore TTL for automatic deletion even when the panel is closed. Use Backup JSON before expiry if needed. COD Due sent to KM Tracker is a deduction, not KM earnings.</span></div>
-<section class="cod-summary" aria-live="polite">
-<div class="card"><small>Panel COD</small><strong id="codTotal">৳0.00</strong></div>
-<div class="card"><small>Rider Collected</small><strong id="codCollected">৳0.00</strong></div>
-<div class="card"><small>Rider Due</small><strong id="codDue">৳0.00</strong></div>
-<div class="card"><small>Rider Overpaid</small><strong id="codOver">৳0.00</strong></div>
-<div class="card"><small>Paid to Agent</small><strong id="agentPaid">৳0.00</strong></div>
-<div class="card"><small>Agent Balance</small><strong id="agentBalance">৳0.00</strong></div>
+<section class="cod-overview" aria-label="Daily COD summary">
+  <div class="cod-overview-heading"><div><h2>Today's Collection Overview</h2><p>Figures reflect the selected work date, not live company data.</p></div><span id="codRiderCount" class="cod-pill">0 riders</span></div>
+  <div class="cod-summary" aria-live="polite">
+    <div class="card cod-stat cod-stat-total"><span class="cod-stat-icon">৳</span><small>Total Panel COD</small><strong id="codTotal">৳0.00</strong></div>
+    <div class="card cod-stat cod-stat-cash"><span class="cod-stat-icon">▤</span><small>Cash Collected</small><strong id="codCash">৳0.00</strong></div>
+    <div class="card cod-stat cod-stat-online"><span class="cod-stat-icon">↗</span><small>Online Received</small><strong id="codOnline">৳0.00</strong></div>
+    <div class="card cod-stat cod-stat-due"><span class="cod-stat-icon">!</span><small>Total Rider Due</small><strong id="codDue">৳0.00</strong><em>Still to collect</em></div>
+    <div class="card cod-stat cod-stat-collected"><small>Total Collected</small><strong id="codCollected">৳0.00</strong></div>
+    <div class="card cod-stat cod-stat-over"><small>Rider Overpaid</small><strong id="codOver">৳0.00</strong></div>
+    <div class="card cod-stat cod-stat-agent"><small>Paid to Agent</small><strong id="agentPaid">৳0.00</strong></div>
+    <div class="card cod-stat cod-stat-agent"><small>Agent Balance</small><strong id="agentBalance">৳0.00</strong></div>
+  </div>
+  <div class="cod-reconcile-note" id="codReconcileNote"></div>
 </section>
-<section class="card cod-section"><div class="cod-section-head"><h2>Rider Collections</h2><span>Cash and online installments</span></div>
-<div id="codRiders" class="cod-riders"></div></section>
+<section class="card cod-section cod-rider-section">
+  <div class="cod-section-head"><div><h2>Rider Collection</h2><span>Choose a rider to view and update only their ledger</span></div></div>
+  <div class="cod-select-row">
+    <label for="codRiderSelect">Select Rider
+      <select id="codRiderSelect" aria-label="Select rider"></select>
+    </label>
+    <span id="codRiderStatus" class="cod-pill">Select a rider</span>
+  </div>
+  <div id="codRiders" class="cod-riders"></div>
+</section>
 <section class="card cod-section"><div class="cod-section-head"><h2>Payment Agent Settlement</h2><span>Record each cash or online transfer</span></div>
 <form id="agentForm" class="cod-entry-form">
 <label>Method<select id="agentMethod"><option>Cash</option><option>bKash</option><option>Nagad</option><option>Rocket</option><option>Bank Transfer</option><option>Other</option></select></label>
