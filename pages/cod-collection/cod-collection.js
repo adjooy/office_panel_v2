@@ -9,14 +9,184 @@ const bdToday=()=>{const d=new Date(Date.now()+21600000);return d.getUTCFullYear
 const uid=()=>Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9);
 const parseMoney=s=>{if(!/^\d+(?:\.\d{1,2})?$/.test(String(s).trim()))return null;const v=Math.round(Number(s)*100);return Number.isSafeInteger(v)&&v>=0?v:null};
 const centsToInput=v=>(v/100).toFixed(2);
+const validDate=v=>/^\d{4}-\d{2}-\d{2}$/.test(v)&&!Number.isNaN(new Date(v+'T00:00:00+06:00').getTime());
+const DAY_MS=86400000, RETENTION_DAYS=30;
+const expiryMs=date=>new Date(date+'T00:00:00+06:00').getTime()+RETENTION_DAYS*DAY_MS;
+const isExpired=date=>!validDate(date)||expiryMs(date)<=Date.now();
+const clone=v=>JSON.parse(JSON.stringify(v));
 function notice(s){x('codMessage').textContent=s;}
+function cloudStatus(s){x('codCloudStatus').textContent=s;}
 function defaultDay(){return {riders:Array.from({length:5},(_,i)=>({id:uid(),name:'Rider '+(i+1),cod:0,payments:[],remarks:'',sent:false})),agent:[]};}
-let db={version:1,days:{}},day;
-try{const d=JSON.parse(localStorage.getItem(STORE)||'null');if(d&&d.version===1&&d.days&&typeof d.days==='object')db=d;}catch(e){notice('Saved data could not be read; do not overwrite without restoring a backup.');}
+const firebaseConfig = {
+  apiKey: "AIzaSyADm297kotJhrGe_TbM9dZCktoFDVBIIr4",
+  authDomain: "adjoy-rider-tracker.firebaseapp.com",
+  projectId: "adjoy-rider-tracker",
+  storageBucket: "adjoy-rider-tracker.firebasestorage.app",
+  messagingSenderId: "207253998908",
+  appId: "1:207253998908:web:17f549b4a947b327f5e239",
+  measurementId: "G-3CBEZGZVHM"
+};
+if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
+const fbAuth=firebase.auth(), fbDb=firebase.firestore();
+let db={version:1,days:{}},cloudRef=null,cloudVersions={},ready=false,saveFailure=false;
+let workQueue=Promise.resolve(),pendingWrites=0,loadedUid=null,loadToken=0;
+let localBackup={version:1,days:{}};
+try {
+  const d=JSON.parse(localStorage.getItem(STORE)||'null');
+  if(d&&d.version===1&&d.days&&typeof d.days==='object')localBackup=d;
+} catch(err) {notice('Old browser backup could not be parsed. Keep your backup file.');}
 x('codDate').value=bdToday();
 const today=()=>x('codDate').value;
-function current(){const k=today();if(!db.days[k])db.days[k]=defaultDay();return db.days[k];}
-function persist(){localStorage.setItem(STORE,JSON.stringify(db));}
+function current(){
+  const date=today();
+  if(isExpired(date))return {riders:[],agent:[]};
+  if(!db.days[date])db.days[date]=defaultDay();
+  return db.days[date];
+}
+function ensureReady(){
+  if(!ready||!fbAuth.currentUser||saveFailure||isExpired(today())){
+    alert(saveFailure ? 'Cloud save failed. Export your backup before refreshing.' :
+      isExpired(today()) ? 'This work date is older than 30 days and cannot be edited.' :
+      'Firebase is still loading. Please reopen after the connection is ready.');
+    return false;
+  }
+  return true;
+}
+function cacheLocal(){
+  try{localStorage.setItem(STORE,JSON.stringify(db));}catch(err){console.warn('COD local backup unavailable',err);}
+}
+function syncUi(){
+  document.body.classList.toggle('cod-locked',!ready||saveFailure||isExpired(today()));
+  if(!ready)cloudStatus('Connecting to Firebase...');
+  else if(saveFailure)cloudStatus('Cloud error — backup your data, then refresh');
+  else if(isExpired(today()))cloudStatus('This date has expired (older than 30 days)');
+  else if(pendingWrites)cloudStatus('Saving to Firebase ('+pendingWrites+')...');
+  else cloudStatus('Firebase connected · All changes saved');
+}
+function validateDay(v){
+  if(!v||!Array.isArray(v.riders)||!Array.isArray(v.agent)||v.riders.length>150)throw Error('Invalid COD day structure');
+  const riders=new Set();
+  for(const r of v.riders){
+    if(!r||typeof r.id!=='string'||typeof r.name!=='string'||r.name.length>90||
+      !Number.isSafeInteger(r.cod)||r.cod<0||!Array.isArray(r.payments)||r.payments.length>1000||
+      riders.has(r.id))throw Error('Invalid COD rider');
+    riders.add(r.id);
+    for(const p of r.payments)validatePayment(p);
+  }
+  if(v.agent.length>2500)throw Error('Too many payments in one day');
+  for(const p of v.agent)validatePayment(p);
+}
+function validatePayment(p){
+  if(!p||typeof p.id!=='string'||!Number.isSafeInteger(p.amount)||
+    p.amount<=0||!methods.includes(p.method)||typeof p.reference!=='string'||p.reference.length>140)
+    throw Error('Invalid payment record');
+}
+function persist(){
+  if(!ensureReady())return Promise.resolve(false);
+  const date=today(),data=clone(db.days[date]);
+  try{validateDay(data);}catch(err){alert(err.message);return Promise.resolve(false);}
+  cacheLocal();
+  pendingWrites++;syncUi();
+  const ref=cloudRef.doc(date),user=loadedUid;
+  const operation=async()=>{
+    if(user!==loadedUid||!fbAuth.currentUser||fbAuth.currentUser.uid!==user)throw Error('Account changed while saving');
+    const baseline=cloudVersions[date]||0;
+    await fbDb.runTransaction(async tx=>{
+      const snap=await tx.get(ref);
+      const revision=snap.exists?Number(snap.data().revision||0):0;
+      if(revision!==baseline)throw Error('This date changed on another device. Export a backup and refresh the cloud data before editing.');
+      tx.set(ref,{
+        date,riders:data.riders,agent:data.agent,
+        revision:revision+1,
+        expiresAt:firebase.firestore.Timestamp.fromMillis(expiryMs(date)),
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+    });
+    cloudVersions[date]=baseline+1;
+    return true;
+  };
+  const promise=workQueue.then(operation);
+  workQueue=promise.catch(err=>{console.error('COD cloud save failed',err);saveFailure=true;notice('Cloud save failed: '+err.message+' Local backup kept. Export JSON before refreshing.');return false;})
+    .finally(()=>{pendingWrites--;syncUi();});
+  return promise.catch(()=>false);
+}
+async function cleanupExpired(collection,docs){
+  const expired=docs.filter(s=>isExpired(s.id));
+  for(let offset=0;offset<expired.length;offset+=400){
+    const batch=fbDb.batch();
+    for(const snap of expired.slice(offset,offset+400))batch.delete(snap.ref);
+    await batch.commit();
+  }
+}
+async function loadCloud(){
+  if(!cloudRef)throw Error('Sign in to use COD Cloud.');
+  const uidNow=loadedUid;
+  ready=false;syncUi();
+  await workQueue;
+  const snap=await cloudRef.get();
+  if(uidNow!==loadedUid)return;
+  await cleanupExpired(cloudRef,snap.docs);
+  const loaded={version:1,days:{}};
+  const versions={};
+  for(const doc of snap.docs){
+    if(isExpired(doc.id))continue;
+    const value=doc.data();
+    if(!value||!Array.isArray(value.riders)||!Array.isArray(value.agent))continue;
+    validateDay(value);
+    loaded.days[doc.id]={riders:value.riders,agent:value.agent};
+    versions[doc.id]=Number(value.revision||0);
+  }
+  // First-time migration of the old local-only COD ledger. Existing cloud
+  // records always win, so a stale browser cache cannot overwrite another
+  // device. A transaction with exists-check avoids duplicate imports.
+  let migrated=0;
+  for(const [date,value] of Object.entries(localBackup.days||{})){
+    if(isExpired(date)||loaded.days[date])continue;
+    try{validateDay(value);}catch(err){continue;}
+    const ref=cloudRef.doc(date);
+    const imported=await fbDb.runTransaction(async tx=>{
+      const remote=await tx.get(ref);
+      if(remote.exists)return false;
+      tx.set(ref,{
+        date,riders:value.riders,agent:value.agent,
+        revision:1,
+        expiresAt:firebase.firestore.Timestamp.fromMillis(expiryMs(date)),
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      return true;
+    });
+    if(imported){loaded.days[date]=clone(value);versions[date]=1;migrated++;}
+    else {
+      const remote=await ref.get();
+      if(remote.exists){
+        const valueRemote=remote.data();
+        loaded.days[date]={riders:valueRemote.riders,agent:valueRemote.agent};
+        versions[date]=Number(valueRemote.revision||0);
+      }
+    }
+  }
+  db=loaded;cloudVersions=versions;localBackup={version:1,days:{}};
+  try{localStorage.removeItem(STORE);}catch(err){}
+  cacheLocal();
+  ready=true;saveFailure=false;syncUi();render();
+  notice(migrated ? migrated+' existing browser day(s) migrated to Firestore. Old cloud records were preserved.' :
+    'Cloud records loaded. Data older than 30 days is excluded.');
+}
+fbAuth.onAuthStateChanged(async user=>{
+  const token=++loadToken;
+  ready=false;syncUi();
+  if(!user){loadedUid=null;cloudRef=null;db={version:1,days:{}};cloudStatus('Please log in from the main panel');return;}
+  loadedUid=user.uid;
+  cloudRef=fbDb.collection('users').doc(user.uid).collection('codDailyRecords');
+  try {
+    await loadCloud();
+    if(token!==loadToken)return;
+  }catch(err){
+    console.error('COD Cloud load failed',err);
+    ready=false;cloudStatus('Cannot load Firebase: '+err.message);
+    notice('Cloud access unavailable. Your existing browser data has not been deleted.');
+  }
+});
 function sums(r){const paid=r.payments.reduce((n,p)=>n+p.amount,0);return {paid,diff:r.cod-paid};}
 function el(tag,cls,content){const a=document.createElement(tag);if(cls)a.className=cls;if(content!==undefined)a.textContent=content;return a;}
 function button(label,fn,cls=''){const b=el('button','cod-action '+cls,label);b.type='button';b.addEventListener('click',fn);return b;}
@@ -57,6 +227,42 @@ x('agentForm').addEventListener('submit',e=>{e.preventDefault();const v=parseMon
 function download(name,content,type){const b=new Blob([content],{type}),url=URL.createObjectURL(b),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 x('codExport').addEventListener('click',()=>{const lines=[['Date','Type','Rider','Panel COD','Payment method','Payment amount','Due','Overpaid','Remarks/Reference']];const d=current();for(const r of d.riders){const s=sums(r);lines.push([today(),'Rider summary',r.name,centsToInput(r.cod),'',centsToInput(s.paid),centsToInput(Math.max(0,s.diff)),centsToInput(Math.max(0,-s.diff)),r.remarks]);for(const p of r.payments)lines.push([today(),'Rider payment',r.name,'',p.method,centsToInput(p.amount),'','',p.reference]);}for(const p of d.agent)lines.push([today(),'Agent payment','','',p.method,centsToInput(p.amount),'','',p.reference]);const csv='\uFEFF'+lines.map(row=>row.map(v=>{let s=String(v??'');if(/^[=+@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}).join(',')).join('\r\n');download('COD_Collection_'+today()+'.csv',csv,'text/csv;charset=utf-8');});
 x('codBackup').addEventListener('click',()=>download('COD_Backup_'+bdToday()+'.json',JSON.stringify(db,null,2),'application/json'));
-x('codRestore').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{const d=JSON.parse(await file.text());if(d.version!==1||!d.days||typeof d.days!=='object')throw Error('Unsupported backup');for(const [date,v] of Object.entries(d.days)){if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Array.isArray(v.riders)||!Array.isArray(v.agent))throw Error('Invalid backup structure');for(const r of v.riders){if(typeof r.name!=='string'||!Number.isSafeInteger(r.cod)||r.cod<0||!Array.isArray(r.payments))throw Error('Invalid rider');for(const p of r.payments)if(!Number.isSafeInteger(p.amount)||p.amount<0||!methods.includes(p.method))throw Error('Invalid payment');}for(const p of v.agent)if(!Number.isSafeInteger(p.amount)||p.amount<0||!methods.includes(p.method))throw Error('Invalid agent payment');}if(!confirm('Replace ALL locally saved COD days with this backup?'))return;db=d;persist();render();notice('Backup restored.');}catch(err){alert('Restore failed: '+err.message);}finally{e.target.value='';}});
-render();
+// Restore only dates not present in Firestore; never overwrite cloud records.
+x('codRestore').addEventListener('change',async e=>{
+  const file=e.target.files[0];if(!file)return;
+  try {
+    if(!ensureReady())return;
+    const incoming=JSON.parse(await file.text());
+    if(incoming.version!==1||!incoming.days||typeof incoming.days!=='object')throw Error('Unsupported backup');
+    const dates=Object.entries(incoming.days).filter(([d])=>!isExpired(d));
+    for(const [,value] of dates)validateDay(value);
+    if(!confirm('Import missing days from this backup to Firebase? Existing cloud days will NOT be overwritten. Expired days are skipped.'))return;
+    await workQueue;
+    let added=0,skipped=0;
+    for(const [date,value] of dates){
+      const ref=cloudRef.doc(date);
+      const ok=await fbDb.runTransaction(async tx=>{
+        const snap=await tx.get(ref);
+        if(snap.exists)return false;
+        tx.set(ref,{
+          date,riders:value.riders,agent:value.agent,revision:1,
+          expiresAt:firebase.firestore.Timestamp.fromMillis(expiryMs(date)),
+          updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+        });
+        return true;
+      });
+      if(ok)added++;else skipped++;
+    }
+    await loadCloud();
+    notice('Cloud restore: '+added+' day(s) imported, '+skipped+' already present. Expired days skipped.');
+  } catch(err){alert('Restore failed: '+err.message);}
+  finally{e.target.value='';}
+});
+x('codRefresh').addEventListener('click',async()=>{
+  if(pendingWrites){alert('Finish saving the current changes before refreshing.');return;}
+  if(!cloudRef)return alert('Firebase is not connected.');
+  try{await loadCloud();}catch(err){ready=false;syncUi();alert('Cloud refresh failed: '+err.message);}
+});
+
+// The signed-in user state initiates the first cloud load.
 })();
