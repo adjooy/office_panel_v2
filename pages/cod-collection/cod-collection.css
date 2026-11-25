@@ -266,3 +266,25 @@ body.cod-locked #codTransferForm,body.cod-locked #codTransferHistory{pointer-eve
 .cod-agent-extra b{color:#23395d;font-size:14px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .cod-agent-footnote{color:#66758d;font-size:12px;line-height:1.6;margin:12px 0 0}
 @media(max-width:680px){.cod-agent-overview-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.cod-agent-overview-difference{grid-column:1/-1}.cod-agent-extra{grid-template-columns:1fr}.cod-agent-overview-item{padding:12px}}
+
+/* Simplified COD workspace: four overview figures, one COD entry and one agent section. */
+.cod-summary-simple{grid-template-columns:repeat(4,minmax(0,1fr))}
+.cod-summary-simple .cod-stat{min-width:0}
+.cod-summary-simple .cod-stat-detail{display:block;font-size:11px;color:#657693;line-height:1.5;margin-top:8px}
+.cod-summary-simple .cod-stat-detail b{color:#30476c;font-weight:800}
+.cod-agent-overview-simple{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cod-agent-form-title{margin:18px 0 7px;padding-top:15px;border-top:1px solid #e2e9f4}
+.cod-rider .cod-rider-fields{display:none}
+.cod-rider-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+.cod-rider-metric{min-width:0}
+.cod-cash-add-section{margin-top:14px}
+.cod-cash-add-section .cod-cash-help{margin-bottom:8px}
+.cod-cash-add-section .cod-subtitle{margin-bottom:9px}
+@media(max-width:850px){.cod-summary-simple{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){
+ .cod-rider-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .cod-rider-metric.cod-metric-due,.cod-rider-metric.cod-metric-over,.cod-rider-metric.cod-metric-ok{grid-column:1/-1}
+ .cod-agent-overview-simple{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .cod-agent-overview-simple .cod-agent-overview-difference{grid-column:auto}
+}
+@media(max-width:385px){.cod-agent-overview-simple{grid-template-columns:1fr}}
