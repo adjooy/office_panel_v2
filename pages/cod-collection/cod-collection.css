@@ -223,3 +223,28 @@ body.cod-locked #codTransferForm,body.cod-locked #codTransferHistory{pointer-eve
 .cod-rider-overview-value.is-paid b{color:#17794c}
 @media(max-width:750px){.cod-rider-overview{grid-template-columns:1fr}}
 @media(max-width:430px){.cod-rider-overview-card{padding:12px}.cod-rider-overview-values{gap:7px}.cod-rider-overview-value b{font-size:14px}.cod-rider-overview-title h3{font-size:16px}}
+
+/* Additional cash COD entered into a rider's original Panel COD amount. */
+.cod-cash-add-section{background:#fffdf7;border:1px solid #f2e4bd;border-radius:12px;padding:14px;margin:17px 0}
+.cod-cash-add-section .cod-subtitle{margin-top:2px}
+.cod-cash-help{font-size:12px;line-height:1.6;color:#82662e;margin:5px 0 12px}
+.cod-cash-add-form{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) auto!important}
+.cod-cash-history{display:grid;gap:8px;margin-top:10px}
+.cod-cash-item{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #eedeb5;background:#fff;border-radius:10px;padding:9px 11px}
+.cod-cash-entry-info{display:flex;flex-direction:column;gap:4px;min-width:0}
+.cod-cash-entry-info strong{color:#574016;font-size:14px}
+.cod-cash-entry-info small{font-size:12px;color:#6e6c67;overflow-wrap:anywhere}
+.cod-cash-entry-actions{display:flex;gap:6px;flex-wrap:wrap}
+@media(max-width:740px){
+ .cod-cash-add-form{grid-template-columns:1fr 1fr!important}
+ .cod-cash-add-form label:nth-child(2){grid-column:1/-1}
+ .cod-cash-add-form button{grid-column:1/-1}
+}
+@media(max-width:500px){
+ .cod-cash-add-section{padding:11px}
+ .cod-cash-add-form{grid-template-columns:1fr!important}
+ .cod-cash-add-form label{grid-column:1/-1}
+ .cod-cash-item{flex-wrap:wrap}
+ .cod-cash-entry-actions{width:100%}
+ .cod-cash-entry-actions .cod-action{flex:1}
+}
