@@ -431,6 +431,45 @@ function render(){
       else online+=p.amount;
     }
   }
+  // Rider overview uses effective (transfer-adjusted) COD to avoid counting
+  // transferred parcels twice. Figures always reflect the work date selected.
+  const overview=x('codRiderOverview');
+  overview.replaceChildren();
+  if(!d.riders.length)overview.append(el('p','cod-empty','No riders for this date.'));
+  for(const rider of d.riders){
+    const adjusted=effectiveCOD(d,rider.id);
+    const paid=sums(rider).paid;
+    const difference=adjusted-paid;
+    const status=difference>0?'Pending':difference<0?'Overpaid':'Paid';
+    const statusAmount=Math.abs(difference);
+    const card=el('div','cod-rider-overview-card');
+    card.tabIndex=0;
+    card.setAttribute('role','button');
+    card.setAttribute('aria-label','Open '+rider.name+' collection details');
+    const top=el('div','cod-rider-overview-top');
+    top.append(el('strong','cod-rider-overview-name',rider.name),
+      el('span','cod-rider-overview-status '+(difference>0?'is-pending':difference<0?'is-overpaid':'is-paid'),status));
+    const metrics=el('div','cod-rider-overview-values');
+    for(const [label,value,cls] of [
+      ['Adjusted COD',adjusted,''],
+      ['Collected',paid,''],
+      [difference>0?'Pending':difference<0?'Overpaid':'Remaining',statusAmount,difference>0?'is-pending':difference<0?'is-overpaid':'is-paid']
+    ]){
+      const group=el('div','cod-rider-overview-value '+cls);
+      group.append(el('small','',label),el('b','',money(value)));metrics.append(group);
+    }
+    card.append(top,metrics);
+    const choose=()=>{
+      if(editingTransferId)resetTransferEditor();
+      selectedRiderId=rider.id;render();
+      x('codRiderSelect').scrollIntoView({behavior:'smooth',block:'start'});
+    };
+    card.addEventListener('click',choose);
+    card.addEventListener('keydown',e=>{
+      if(e.key==='Enter'||e.key===' '){e.preventDefault();choose();}
+    });
+    overview.append(card);
+  }
   const agent=d.agent.reduce((n,p)=>n+p.amount,0);
   for(const [id,n] of [
     ['codTotal',total],['codCash',cash],['codOnline',online],
@@ -517,17 +556,17 @@ function render(){
     if(r.sent)card.append(el('small','cod-memo',
       'This rider/date already has a COD Due transfer to KM Tracker. Changes here do not adjust that deduction automatically.'));
 
-    // Keep the transfer section inside the selected rider, directly
-    // above Payment History. Reuse the same node to preserve form handlers.
-    card.append(transferPanelNode);
-    const sub=el('h4','cod-subtitle','Payment History');
-    card.append(sub,table(r.payments,id=>{
+    // Transactions are entered and reviewed before transferring rider COD.
+    card.append(el('h4','cod-subtitle','Add Transaction'));
+    addPaymentForm(card,p=>{r.payments.push(p);persist();render();});
+    card.append(el('h4','cod-subtitle','Transaction History'));
+    card.append(table(r.payments,id=>{
       if(!confirm('Remove this payment?'))return;
       r.payments=r.payments.filter(p=>p.id!==id);
       persist();render();
     },id=>openEditPayment('rider',r.id,id)));
-    card.append(el('h4','cod-subtitle','Add Cash or Online Payment'));
-    addPaymentForm(card,p=>{r.payments.push(p);persist();render();});
+    // Reuse the live transfer form node, preserving attached event listeners.
+    card.append(transferPanelNode);
     target.append(card);
   }
 
