@@ -323,13 +323,13 @@ function addPaymentForm(container,callback){const f=el('form','cod-entry-form');
 
 function renderCODCashAdditions(card,d,r){
   const outer=el('section','cod-cash-add-section');
-  outer.append(el('h4','cod-subtitle','Add Cash to Panel COD'));
-  outer.append(el('p','cod-cash-help','Add cash COD not included in the original panel figure. This increases the rider assigned COD and Due, not Cash Collected. Cash received from the rider belongs in Add Transaction.'));
+  outer.append(el('h4','cod-subtitle','Add Cash to COD'));
+  outer.append(el('p','cod-cash-help','Enter assigned COD here. When a rider pays you, use Add Transaction below to reduce Due.'));
   const form=el('form','cod-entry-form cod-cash-add-form');
   const amt=el('input');amt.type='number';amt.min='.01';amt.step='.01';amt.placeholder='0.00';amt.required=true;
   const ref=el('input');ref.maxLength=140;ref.placeholder='Parcel CID / reason';ref.required=true;
   const mk=(label,input)=>{const wrap=el('label');wrap.append(el('span','',label),input);return wrap;};
-  const submit=el('button','btn btn-primary','+ Add COD Cash');submit.type='submit';
+  const submit=el('button','btn btn-primary','+ Add Cash to COD');submit.type='submit';
   form.append(mk('Amount (BDT)',amt),mk('CID / Reference',ref),submit);
   form.addEventListener('submit',event=>{
     event.preventDefault();if(!ensureReady())return;
@@ -343,10 +343,16 @@ function renderCODCashAdditions(card,d,r){
   });
   outer.append(form);
   const entries=dayAdditions(d).filter(a=>a.riderId===r.id);
-  outer.append(el('h4','cod-subtitle','Panel COD Cash History'));
-  if(!entries.length)outer.append(el('p','cod-empty','No extra cash COD added for this rider.'));
+  outer.append(el('h4','cod-subtitle','COD Entry History'));
+  if(!entries.length && !r.cod)outer.append(el('p','cod-empty','No COD entered for this rider.'));
   else{
     const list=el('div','cod-cash-history');
+    if(r.cod>0){
+      const legacy=el('div','cod-cash-item');
+      const info=el('div','cod-cash-entry-info');
+      info.append(el('strong','',money(r.cod)),el('small','','Earlier saved Panel COD'));
+      legacy.append(info);list.append(legacy);
+    }
     for(const entry of entries.slice().reverse()){
       const line=el('div','cod-cash-item');
       const info=el('div','cod-cash-entry-info');
@@ -705,25 +711,10 @@ function render(){
     },'cod-danger'));
     top.append(actions);card.append(top);
 
-    const fields=el('div','cod-rider-fields');
-    fields.append(field('Original Panel COD (BDT)',centsToInput(r.cod),(v,inp)=>{
-      const n=parseMoney(v);
-      if(n===null){alert('Invalid amount');inp.value=centsToInput(r.cod);return;}
-      if(n!==r.cod && n<0){alert('Invalid COD amount');return;}
-      const old=r.cod;r.cod=n;
-      if(effectiveCOD(d,r.id)<0){r.cod=old;alert('COD would fall below transfers already sent from this rider. Edit a transfer first.');inp.value=centsToInput(old);return;}
-      persist();render();
-    },'number'));
-    fields.append(field('Remarks',r.remarks,(v)=>{r.remarks=v.slice(0,300);persist();},'text'));
-    card.append(fields);
-
     const metrics=el('div','cod-rider-metrics');
     for(const [name,val,extra] of [
-      ['Original Panel COD',r.cod,'cod-metric-original'],
-      ['Adjusted COD',riderCOD,'cod-metric-adjusted'],
-      ['Cash',paidCash,''],
-      ['Online',paidOnline,''],
-      ['Total Paid',paid,''],
+      ['Assigned COD',riderCOD,'cod-metric-adjusted'],
+      ['Collected',paid,''],
       [diff>0?'DUE':diff<0?'OVERPAID':'SETTLED',Math.abs(diff),diff>0?'cod-metric-due':diff<0?'cod-metric-over':'cod-metric-ok']
     ]){
       const item=el('div','cod-rider-metric '+extra);
@@ -731,11 +722,6 @@ function render(){
       metrics.append(item);
     }
     card.append(metrics);
-    if(diff>0)card.append(el('p','cod-due-explainer',
-      'Outstanding: '+money(riderCOD)+' assigned COD − '+money(paid)+' collected = '+money(diff)+' still due.'));
-    else if(diff<0)card.append(el('p','cod-due-explainer cod-paid-note',
-      'Overpaid by '+money(-diff)+'. Please verify the extra payment.'));
-    else card.append(el('p','cod-due-explainer cod-paid-note','All COD for this rider has been collected.'));
     if(r.sent)card.append(el('small','cod-memo',
       'This rider/date already has a COD Due transfer to KM Tracker. Changes here do not adjust that deduction automatically.'));
 
