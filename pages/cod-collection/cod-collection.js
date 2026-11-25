@@ -550,6 +550,7 @@ x('codTransferForm').addEventListener('submit',e=>{
 const transferPanelNode=x('codTransferPanel');
 let selectedRiderId = null;
 let selectedRiderDate = null;
+let transactionFeedback=null;
 
 function render(){
   const d=current(), target=x('codRiders');
@@ -737,10 +738,23 @@ function render(){
       const before=Math.max(0,effectiveCOD(d,r.id)-sums(r).paid);
       r.payments.push(p);
       const after=Math.max(0,effectiveCOD(d,r.id)-sums(r).paid);
-      persist();render();
-      notice('Transaction recorded: '+money(p.amount)+'. Rider Due: '+money(before)+' → '+money(after)+
-        (after===before?' (already fully paid; any extra is overpaid).':''));
+      const details='Transaction '+money(p.amount)+' · Due '+money(before)+' → '+money(after)+
+        (after===before?' (already settled; extra payment is overpaid).':'');
+      transactionFeedback={date:today(),riderId:r.id,text:details+' · Saving...'};
+      const saved=persist();
+      render();
+      saved.then(ok=>{
+        if(transactionFeedback?.date===today()&&transactionFeedback.riderId===r.id){
+          transactionFeedback.text=details+(ok?' · Saved to Firebase.':' · SAVE FAILED. Export backup and refresh cloud.');
+          const node=x('codTransactionFeedback');
+          if(node)node.textContent=transactionFeedback.text;
+        }
+      });
     });
+    if(transactionFeedback?.date===date&&transactionFeedback.riderId===r.id){
+      const feedback=el('p','cod-transaction-feedback',transactionFeedback.text);
+      feedback.id='codTransactionFeedback';card.append(feedback);
+    }
     card.append(el('h4','cod-subtitle','Transaction History'));
     card.append(table(r.payments,id=>{
       if(!confirm('Remove this payment?'))return;
