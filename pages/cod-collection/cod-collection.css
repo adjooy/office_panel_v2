@@ -288,3 +288,11 @@ body.cod-locked #codTransferForm,body.cod-locked #codTransferHistory{pointer-eve
  .cod-agent-overview-simple .cod-agent-overview-difference{grid-column:auto}
 }
 @media(max-width:385px){.cod-agent-overview-simple{grid-template-columns:1fr}}
+
+/* Compact previous/next day controls beside the COD work date. */
+.cod-date-nav{display:flex;align-items:center;gap:7px;width:100%}
+.cod-date-nav input[type="date"]{flex:1 1 auto;width:100%;min-width:0}
+.cod-date-arrow{display:inline-flex;align-items:center;justify-content:center;flex:0 0 40px;width:40px;height:42px;min-height:42px;padding:0;border:1px solid #d7e1f4;border-radius:9px;background:#edf3ff;color:#3557a9;font-weight:800;font-size:28px;line-height:1;cursor:pointer}
+.cod-date-arrow:hover{background:#dfe9ff;border-color:#a8bff0}
+.cod-date-arrow:focus-visible{outline:2px solid #5b75d8;outline-offset:2px}
+@media(max-width:600px){.cod-date-nav{gap:8px}.cod-date-arrow{flex-basis:45px;width:45px;height:46px}.cod-date-nav input[type="date"]{min-height:46px}}
