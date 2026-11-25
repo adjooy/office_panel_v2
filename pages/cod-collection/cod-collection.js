@@ -627,19 +627,28 @@ function render(){
   for(const [id,n] of [
     ['codTotal',total],['codCash',cash],['codOnline',online],
     ['codCollected',collected],['codDue',due],['codOver',over],
-    ['agentPaid',agent]
+    ['agentExpectedCOD',total],['agentPaid',agent],['agentCollectedTotal',collected]
   ])x(id).textContent=money(n);
-  const balance=collected-agent;
-  x('agentBalance').textContent=(balance<0?'Overpaid ':'')+money(Math.abs(balance));
-  x('agentBalance').style.color=balance<0?'#be123c':'#172442';
+  // The main agent comparison is against the PANEL COD, not collected cash.
+  // Keep the cash-reconciliation gap visible as a separate figure.
+  const agentVsCOD=agent-total,agentVsCollected=agent-collected;
+  const agentLabel=agentVsCOD>0?'Above COD ':agentVsCOD<0?'Below COD ':'Matched ';
+  const agentDifference=x('agentBalance');
+  agentDifference.textContent=agentLabel+money(Math.abs(agentVsCOD));
+  agentDifference.classList.toggle('cod-agent-positive',agentVsCOD>0);
+  agentDifference.classList.toggle('cod-agent-negative',agentVsCOD<0);
+  x('agentVsCollected').textContent=(agentVsCollected>0?'Paid above collections ':agentVsCollected<0?'Collections held ':'Matched ')+money(Math.abs(agentVsCollected));
+  x('agentCodExplanation').textContent=agentVsCOD>0
+    ? 'Paid to Agent '+money(agent)+' − Total Panel COD '+money(total)+' = '+money(agentVsCOD)+' paid above COD.'
+    :agentVsCOD<0
+      ? 'Total Panel COD '+money(total)+' − Paid to Agent '+money(agent)+' = '+money(-agentVsCOD)+' still below COD.'
+      :'Paid to Agent equals Total Panel COD.';
   x('codReconcileNote').textContent=due>0
     ? money(due)+' is still outstanding across '+d.riders.filter(r=>effectiveCOD(d,r.id)-sums(r).paid>0).length+' rider(s).'
     : 'All rider COD amounts are settled or overpaid.';
-  x('agentReconcile').textContent=balance>0
-    ? 'Money still held for payment agent: '+money(balance)
-    :balance<0
-      ? 'Agent received '+money(-balance)+' more than recorded rider collections.'
-      :'All recorded collections have been settled with agent.';
+  x('agentReconcile').textContent='Agent vs Panel COD: '+(agentVsCOD>0?money(agentVsCOD)+' above COD':agentVsCOD<0?money(-agentVsCOD)+' below COD':'Matched')+
+    '. Agent vs actual collections: '+(agentVsCollected>0?money(agentVsCollected)+' paid above collections':agentVsCollected<0?money(-agentVsCollected)+' still held':'Matched')+
+    '. Note: rider pending and overpaid entries explain why collected cash differs from Panel COD.';
 
   target.replaceChildren();
   const r=d.riders.find(q=>q.id===selectedRiderId);
