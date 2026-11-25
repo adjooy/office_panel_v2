@@ -278,6 +278,14 @@
 .km-easy-actions button:disabled{opacity:.4}
 @media(max-width:800px){.km-easy-stats,.km-easy-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.km-easy{padding:12px}.km-easy-head label{flex:1 1 100%}.km-easy-stats>div{padding:10px}.km-easy-stats strong{font-size:16px}.km-easy-balance{align-items:flex-start;flex-direction:column;padding:13px}.km-easy-actions button{min-height:53px;font-size:12px}}
+
+  /* One-day navigation for KM entry date */
+  .km-entry-date-nav{display:flex;align-items:center;gap:7px;min-width:0}
+  .km-entry-date-nav input[type="date"]{flex:1 1 auto;min-width:0;width:100%;min-height:45px;font-size:16px}
+  .km-date-arrow{flex:0 0 42px;display:inline-flex;align-items:center;justify-content:center;min-width:42px;min-height:45px;padding:0;background:#edf3ff;color:#3557a9;border:1px solid #cbd9ee;border-radius:9px;font-size:28px;line-height:1;font-weight:800}
+  .km-date-arrow:hover{background:#dce7ff}
+  .km-date-arrow:focus-visible{outline:2px solid #4b6bd6;outline-offset:2px}
+  @media(max-width:520px){.km-entry-date-nav{gap:6px}.km-date-arrow{flex-basis:44px;min-width:44px;min-height:48px}}
 </style>
 <link rel="stylesheet" href="../../assets/css/panel-theme.css"></head>
 <body class="adjoy-unified">
@@ -552,7 +560,7 @@
     <div class="card c-12">
       <div class="card-head"><h2 id="entryTitle">Add Ride Entry</h2></div><p class="km-easy-hint" id="kmEntryHelp">KM × Rate gives rider earnings.</p>
       <div class="row2">
-        <div class="field"><label for="entryDate">Date</label><input id="entryDate" type="date" onchange="Entries.preview()" /></div>
+        <div class="field"><label for="entryDate">Date</label><div class="km-entry-date-nav"><button type="button" class="km-date-arrow" id="kmPrevDate" aria-label="Previous entry date" title="Previous day">‹</button><input id="entryDate" type="date" onchange="Entries.preview()" /><button type="button" class="km-date-arrow" id="kmNextDate" aria-label="Next entry date" title="Next day">›</button></div></div>
         <div class="field"><label for="entryRider">Rider</label><select id="entryRider" onchange="Entries.preview()"></select></div>
       </div>
       <div class="row2">
@@ -1419,7 +1427,21 @@ const Entries = (() => {
     document.getElementById('entryRate').value = '3.5';
     document.getElementById('entryPaid').value = '0';
     document.getElementById('entryNote').value = '';
-    document.getElementById('entryDate').value = todayISO();
+    function kmShiftEntryDate(dayDelta){
+  const input=document.getElementById('entryDate');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(input.value))return;
+  // UTC arithmetic avoids DST/month-boundary jumps.
+  const day=new Date(input.value+'T00:00:00Z');
+  if(Number.isNaN(day.getTime()))return;
+  day.setUTCDate(day.getUTCDate()+dayDelta);
+  const next=day.toISOString().slice(0,10);
+  if(next==='0000-00-00')return;
+  input.value=next;
+  input.dispatchEvent(new Event('change',{bubbles:true}));
+}
+document.getElementById('kmPrevDate').addEventListener('click',()=>kmShiftEntryDate(-1));
+document.getElementById('kmNextDate').addEventListener('click',()=>kmShiftEntryDate(1));
+document.getElementById('entryDate').value = todayISO();
     preview();
   }
 
