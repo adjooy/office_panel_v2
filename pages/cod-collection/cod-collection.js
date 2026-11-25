@@ -16,7 +16,32 @@ const isExpired=date=>!validDate(date)||expiryMs(date)<=Date.now();
 const clone=v=>JSON.parse(JSON.stringify(v));
 function notice(s){x('codMessage').textContent=s;}
 function cloudStatus(s){x('codCloudStatus').textContent=s;}
-function defaultDay(){return {riders:Array.from({length:5},(_,i)=>({id:uid(),name:'Rider '+(i+1),cod:0,payments:[],remarks:'',sent:false})),agent:[],transfers:[]};}
+const starterNames=['Rider 1','Rider 2','Rider 3','Rider 4','Rider 5'];
+let riderRoster=[],rosterRevision=0,rosterDirty=false;
+const rosterDocId='riderRoster';
+function starterRoster(){return starterNames.map(name=>({id:uid(),name}));}
+function normalizedName(name){return String(name||'').trim().toLocaleLowerCase();}
+function validRoster(value){
+  return Array.isArray(value)&&value.length<=150&&value.every(r=>
+    r&&typeof r.id==='string'&&r.id.length>0&&typeof r.name==='string'&&
+    r.name.trim().length>0&&r.name.length<=90);
+}
+function dayRider(info){return {id:info.id,name:info.name,cod:0,payments:[],remarks:'',sent:false};}
+function defaultDay(){return {riders:riderRoster.map(dayRider),agent:[],transfers:[],codAdditions:[]};}
+function dayAdditions(day){return Array.isArray(day.codAdditions)?day.codAdditions:[];}
+function normalizeDayRiders(day){
+  if(!day||!Array.isArray(day.riders))return;
+  // Never rename or erase a rider carrying historical money or transfers.
+  for(const person of riderRoster){
+    if(day.riders.some(r=>normalizedName(r.name)===normalizedName(person.name)))continue;
+    const old=day.riders.find(r=>/^Rider [1-5]$/.test(r.name)&&
+      !r.cod&&!r.payments.length&&!dayAdditions(day).some(a=>a.riderId===r.id)&&
+      !transfersOf(day).some(t=>t.fromId===r.id||t.toId===r.id));
+    if(old&& !riderRoster.some(z=>normalizedName(z.name)===normalizedName(old.name))){
+      old.name=person.name; // only untouched legacy placeholder
+    }else day.riders.push(dayRider(person));
+  }
+}
 const firebaseConfig = {
   apiKey: "AIzaSyADm297kotJhrGe_TbM9dZCktoFDVBIIr4",
   authDomain: "adjoy-rider-tracker.firebaseapp.com",
@@ -39,8 +64,9 @@ x('codDate').value=bdToday();
 const today=()=>x('codDate').value;
 function current(){
   const date=today();
-  if(isExpired(date))return {riders:[],agent:[]};
+  if(isExpired(date))return {riders:[],agent:[],transfers:[],codAdditions:[]};
   if(!db.days[date])db.days[date]=defaultDay();
+  normalizeDayRiders(db.days[date]);
   return db.days[date];
 }
 function ensureReady(){
@@ -72,6 +98,16 @@ function validateDay(v){
       riders.has(r.id))throw Error('Invalid COD rider');
     riders.add(r.id);
     for(const p of r.payments)validatePayment(p);
+  }
+  if(v.codAdditions!==undefined){
+    if(!Array.isArray(v.codAdditions)||v.codAdditions.length>1500)throw Error('Invalid Panel COD cash entries');
+    const ids=new Set();
+    for(const a of v.codAdditions){
+      if(!a||typeof a.id!=='string'||ids.has(a.id)||!riders.has(a.riderId)||
+         !Number.isSafeInteger(a.amount)||a.amount<=0||typeof a.reference!=='string'||a.reference.length>140)
+        throw Error('Invalid Panel COD cash addition');
+      ids.add(a.id);
+    }
   }
   if(v.agent.length>2500)throw Error('Too many payments in one day');
   for(const p of v.agent)validatePayment(p);
@@ -105,16 +141,25 @@ function persist(){
     const baseline=cloudVersions[date]||0;
     await fbDb.runTransaction(async tx=>{
       const snap=await tx.get(ref);
+      const rosterRef=cloudRef.doc(rosterDocId);
+      const rosterSnap=rosterDirty?await tx.get(rosterRef):null;
+      if(rosterDirty && Number(rosterSnap.exists?rosterSnap.data().revision||0:0)!==rosterRevision)
+        throw Error('Rider list changed on another device. Refresh Cloud first.');
       const revision=snap.exists?Number(snap.data().revision||0):0;
       if(revision!==baseline)throw Error('This date changed on another device. Export a backup and refresh the cloud data before editing.');
       tx.set(ref,{
-        date,riders:data.riders,agent:data.agent,transfers:data.transfers||[],
+        date,riders:data.riders,agent:data.agent,transfers:data.transfers||[],codAdditions:data.codAdditions||[],
         revision:revision+1,
         expiresAt:firebase.firestore.Timestamp.fromMillis(expiryMs(date)),
         updatedAt:firebase.firestore.FieldValue.serverTimestamp()
       });
+      if(rosterDirty)tx.set(rosterRef,{
+        riders:riderRoster,revision:rosterRevision+1,
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
     });
     cloudVersions[date]=baseline+1;
+    if(rosterDirty){rosterRevision++;rosterDirty=false;}
     return true;
   };
   const promise=workQueue.then(operation);
@@ -123,7 +168,7 @@ function persist(){
   return promise.catch(()=>false);
 }
 async function cleanupExpired(collection,docs){
-  const expired=docs.filter(s=>isExpired(s.id));
+  const expired=docs.filter(s=>s.id!==rosterDocId&&isExpired(s.id));
   for(let offset=0;offset<expired.length;offset+=400){
     const batch=fbDb.batch();
     for(const snap of expired.slice(offset,offset+400))batch.delete(snap.ref);
@@ -141,12 +186,18 @@ async function loadCloud(){
   catch(err) { console.warn('Expired COD cleanup skipped; Firestore TTL can delete later:',err); }
   const loaded={version:1,days:{}};
   const versions={};
+  const savedRoster=snap.docs.find(doc=>doc.id===rosterDocId);
+  if(savedRoster){
+    const data=savedRoster.data();
+    if(!validRoster(data.riders))throw Error('Invalid shared rider list. Contact support before editing.');
+    riderRoster=clone(data.riders);rosterRevision=Number(data.revision||0);
+  }
   for(const doc of snap.docs){
     if(isExpired(doc.id))continue;
     const value=doc.data();
     if(!value||!Array.isArray(value.riders)||!Array.isArray(value.agent))continue;
     validateDay(value);
-    loaded.days[doc.id]={riders:value.riders,agent:value.agent,transfers:value.transfers||[]};
+    loaded.days[doc.id]={riders:value.riders,agent:value.agent,transfers:value.transfers||[],codAdditions:value.codAdditions||[]};
     versions[doc.id]=Number(value.revision||0);
   }
   // First-time migration of the old local-only COD ledger. Existing cloud
@@ -161,7 +212,7 @@ async function loadCloud(){
       const remote=await tx.get(ref);
       if(remote.exists)return false;
       tx.set(ref,{
-        date,riders:value.riders,agent:value.agent,transfers:value.transfers||[],
+        date,riders:value.riders,agent:value.agent,transfers:value.transfers||[],codAdditions:value.codAdditions||[],
         revision:1,
         expiresAt:firebase.firestore.Timestamp.fromMillis(expiryMs(date)),
         updatedAt:firebase.firestore.FieldValue.serverTimestamp()
@@ -173,11 +224,41 @@ async function loadCloud(){
       const remote=await ref.get();
       if(remote.exists){
         const valueRemote=remote.data();
-        loaded.days[date]={riders:valueRemote.riders,agent:valueRemote.agent,transfers:valueRemote.transfers||[]};
+        loaded.days[date]={riders:valueRemote.riders,agent:valueRemote.agent,transfers:valueRemote.transfers||[],codAdditions:valueRemote.codAdditions||[]};
         versions[date]=Number(valueRemote.revision||0);
       }
     }
   }
+  if(!savedRoster){
+    const recent=Object.entries(loaded.days).sort((a,b)=>b[0].localeCompare(a[0]));
+    const source=recent[0]?.[1]?.riders||[];
+    const candidates=source.length?source.map(r=>({id:r.id,name:r.name})):starterRoster();
+    // Keep manually named riders from earlier days too.
+    for(const [,day] of recent.slice(1)){
+      for(const r of day.riders){
+        if(!/^Rider [1-5]$/.test(r.name)&&
+          !candidates.some(z=>normalizedName(z.name)===normalizedName(r.name)))
+          candidates.push({id:r.id,name:r.name});
+      }
+    }
+    riderRoster=candidates;
+    if(!validRoster(riderRoster))throw Error('Cannot create shared rider list');
+    const doc=cloudRef.doc(rosterDocId);
+    const didCreate=await fbDb.runTransaction(async tx=>{
+      const remote=await tx.get(doc);
+      if(remote.exists)return false;
+      tx.set(doc,{riders:riderRoster,revision:1,
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+      return true;
+    });
+    if(didCreate)rosterRevision=1;
+    else {
+      const latest=(await doc.get()).data();
+      if(!validRoster(latest?.riders))throw Error('Shared rider list is invalid');
+      riderRoster=clone(latest.riders);rosterRevision=Number(latest.revision||0);
+    }
+  }
+  rosterDirty=false;
   db=loaded;cloudVersions=versions;localBackup={version:1,days:{}};
   try{localStorage.removeItem(STORE);}catch(err){}
   cacheLocal();
@@ -188,7 +269,7 @@ async function loadCloud(){
 fbAuth.onAuthStateChanged(async user=>{
   const token=++loadToken;
   ready=false;syncUi();
-  if(!user){loadedUid=null;cloudRef=null;db={version:1,days:{}};cloudStatus('Please log in from the main panel');return;}
+  if(!user){loadedUid=null;cloudRef=null;riderRoster=[];rosterRevision=0;rosterDirty=false;db={version:1,days:{}};cloudStatus('Please log in from the main panel');return;}
   loadedUid=user.uid;
   cloudRef=fbDb.collection('users').doc(user.uid).collection('codDailyRecords');
   try {
@@ -205,7 +286,7 @@ function transfersOf(day){return Array.isArray(day.transfers)?day.transfers:[];}
 function effectiveCOD(day,riderId,excludingId=null){
   const rider=day.riders.find(r=>r.id===riderId);
   if(!rider)return 0;
-  let net=rider.cod;
+  let net=rider.cod+dayAdditions(day).filter(a=>a.riderId===riderId).reduce((n,a)=>n+a.amount,0);
   for(const t of transfersOf(day)){
     if(t.id===excludingId)continue;
     if(t.fromId===riderId)net-=t.amount;
@@ -214,7 +295,7 @@ function effectiveCOD(day,riderId,excludingId=null){
   return net;
 }
 function transferStatus(day){
-  const base=day.riders.reduce((n,r)=>n+r.cod,0);
+  const base=day.riders.reduce((n,r)=>n+r.cod,0)+dayAdditions(day).reduce((n,a)=>n+a.amount,0);
   const effective=day.riders.reduce((n,r)=>n+effectiveCOD(day,r.id),0);
   return {base,effective};
 }
