@@ -68,6 +68,22 @@
 <form id="agentForm" class="cod-entry-form">
 <label>Method<select id="agentMethod"><option>Cash</option><option>bKash</option><option>Nagad</option><option>Rocket</option><option>Bank Transfer</option><option>Other</option></select></label>
 <label>Amount (BDT)<input id="agentAmount" type="number" min="0.01" step="0.01" required placeholder="0.00"></label>
+<details id="agentNoteCounter" style="grid-column:1/-1">
+  <summary>Count cash notes</summary>
+  <div class="cod-entry-form">
+    <label>৳1000 notes<input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-note-value="1000"></label>
+    <label>৳500 notes<input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-note-value="500"></label>
+    <label>৳200 notes<input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-note-value="200"></label>
+    <label>৳100 notes<input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-note-value="100"></label>
+    <label>৳50 notes<input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-note-value="50"></label>
+    <label>৳20 notes<input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-note-value="20"></label>
+    <label>৳10 notes<input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-note-value="10"></label>
+    <label>৳5 notes<input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-note-value="5"></label>
+    <label>৳2 notes<input type="number" min="0" step="1" inputmode="numeric" placeholder="0" data-note-value="2"></label>
+  </div>
+  <p><output id="agentNoteTotal" aria-live="polite">Total: ৳0</output></p>
+  <button id="agentUseNoteTotal" class="btn btn-light" type="button" disabled>Use total as amount</button>
+</details>
 <label>Transaction / Reference<input id="agentReference" maxlength="140" placeholder="Optional for cash"></label>
 <button class="btn btn-primary" type="submit">+ Add Agent Payment</button></form>
 <div class="cod-table-scroll"><table class="cod-table"><thead><tr><th>Method</th><th>Amount</th><th>Reference</th><th>Action</th></tr></thead><tbody id="agentRows"></tbody></table></div>
@@ -96,4 +112,39 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="cod-collection.js?v=20261125-simple-cod-2"></script></body></html>
+<script src="cod-collection.js?v=20261125-simple-cod-2"></script><script>
+(() => {
+  const form = document.getElementById('agentForm');
+  const method = document.getElementById('agentMethod');
+  const counter = document.getElementById('agentNoteCounter');
+  const output = document.getElementById('agentNoteTotal');
+  const useTotal = document.getElementById('agentUseNoteTotal');
+  const amount = document.getElementById('agentAmount');
+  const notes = [...counter.querySelectorAll('[data-note-value]')];
+  let total = 0;
+
+  function update() {
+    const isCash = method.value === 'Cash';
+    counter.hidden = !isCash;
+    for (const note of notes) note.disabled = !isCash || !counter.open;
+    const valid = notes.every(note => note.validity.valid);
+    total = notes.reduce((sum, note) =>
+      sum + Number(note.value) * Number(note.dataset.noteValue), 0);
+    const usable = valid && Number.isSafeInteger(total);
+    output.textContent = usable ? 'Total: ৳' + total.toLocaleString('en-BD') : 'Enter valid whole note counts.';
+    useTotal.disabled = !isCash || !usable || total <= 0;
+  }
+
+  counter.addEventListener('input', update);
+  counter.addEventListener('toggle', update);
+  method.addEventListener('change', update);
+  form.addEventListener('reset', () => queueMicrotask(update));
+  useTotal.addEventListener('click', () => {
+    if (useTotal.disabled) return;
+    amount.value = String(total);
+    amount.focus();
+  });
+  update();
+})();
+</script>
+</body></html>
