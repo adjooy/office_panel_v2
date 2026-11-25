@@ -248,3 +248,5 @@ body.cod-locked #codTransferForm,body.cod-locked #codTransferHistory{pointer-eve
  .cod-cash-entry-actions{width:100%}
  .cod-cash-entry-actions .cod-action{flex:1}
 }
+
+.cod-transaction-feedback{font-size:12px;font-weight:750;line-height:1.55;color:#12643f;background:#e9f8f1;border:1px solid #c1e9d4;border-radius:10px;padding:11px 13px;margin:12px 0 5px;overflow-wrap:anywhere}
