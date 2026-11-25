@@ -200,3 +200,26 @@ body.cod-locked #codTransferForm,body.cod-locked #codTransferHistory{pointer-eve
  .cod-inline-transfer .cod-transfer-actions button:first-child{grid-column:1/-1}
  .cod-inline-transfer .cod-transfer-actions button:not(:first-child){grid-column:1/-1}
 }
+
+/* Rider-wise daily collection overview, immediately below global totals. */
+.cod-rider-overview-wrap{margin-top:20px}
+.cod-rider-overview-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:11px}
+.cod-rider-overview-title h3{font-size:17px;letter-spacing:-.25px;color:#1e3153;margin:0 0 4px}
+.cod-rider-overview-title p{color:#71809a;font-size:12px;line-height:1.5;margin:0}
+.cod-rider-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.cod-rider-overview-card{background:#fff;border:1px solid #dce6f3;border-radius:13px;padding:13px 15px;min-width:0;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.cod-rider-overview-card:hover,.cod-rider-overview-card:focus-visible{border-color:#7698ed;box-shadow:0 3px 14px #3a66b91c;outline:none}
+.cod-rider-overview-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:13px}
+.cod-rider-overview-name{color:#1d3150;font-size:14px;overflow-wrap:anywhere}
+.cod-rider-overview-status{padding:5px 9px;border-radius:99px;font-size:11px;font-weight:800;white-space:nowrap;background:#e8f7ee;color:#137448}
+.cod-rider-overview-status.is-pending{background:#fff0ee;color:#ad303b}
+.cod-rider-overview-status.is-overpaid{background:#eaf1ff;color:#3055ad}
+.cod-rider-overview-values{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.cod-rider-overview-value{min-width:0;display:flex;flex-direction:column;gap:6px}
+.cod-rider-overview-value small{font-size:10px;font-weight:700;color:#73819a;line-height:1.3}
+.cod-rider-overview-value b{font-size:clamp(12px,1.4vw,17px);font-variant-numeric:tabular-nums;color:#223452;overflow-wrap:anywhere}
+.cod-rider-overview-value.is-pending b{color:#b02b37}
+.cod-rider-overview-value.is-overpaid b{color:#3357b4}
+.cod-rider-overview-value.is-paid b{color:#17794c}
+@media(max-width:750px){.cod-rider-overview{grid-template-columns:1fr}}
+@media(max-width:430px){.cod-rider-overview-card{padding:12px}.cod-rider-overview-values{gap:7px}.cod-rider-overview-value b{font-size:14px}.cod-rider-overview-title h3{font-size:16px}}
