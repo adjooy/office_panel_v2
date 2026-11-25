@@ -317,6 +317,74 @@ function el(tag,cls,content){const a=document.createElement(tag);if(cls)a.classN
 function button(label,fn,cls=''){const b=el('button','cod-action '+cls,label);b.type='button';b.addEventListener('click',fn);return b;}
 function field(label,value,handler,type='text'){const wrap=el('label');wrap.append(el('span','',label));const input=el('input');input.type=type;input.value=value;input.addEventListener('change',()=>handler(input.value,input));wrap.append(input);return wrap;}
 function addPaymentForm(container,callback){const f=el('form','cod-entry-form');const method=el('select');for(const m of methods){const o=el('option','',m);o.value=m;method.append(o);}const amount=el('input');amount.type='number';amount.min='.01';amount.step='.01';amount.placeholder='0.00';amount.required=true;const ref=el('input');ref.maxLength=140;ref.placeholder='Reference / note';for(const [label,input] of [['Method',method],['Amount (BDT)',amount],['Reference',ref]]){const wrap=el('label');wrap.append(el('span','',label),input);f.append(wrap);}const b=el('button','btn btn-primary','+ Add Payment');b.type='submit';f.append(b);f.addEventListener('submit',e=>{e.preventDefault();const v=parseMoney(amount.value);if(v===null||v<=0)return alert('Enter a valid positive amount (maximum two decimals).');callback({id:uid(),method:method.value,amount:v,reference:ref.value.trim().slice(0,140)});f.reset();});container.append(f);}
+
+function renderCODCashAdditions(card,d,r){
+  const outer=el('section','cod-cash-add-section');
+  outer.append(el('h4','cod-subtitle','Add Cash to Panel COD'));
+  outer.append(el('p','cod-cash-help','Add cash COD not included in the original panel figure. This increases the rider assigned COD and Due, not Cash Collected. Cash received from the rider belongs in Add Transaction.'));
+  const form=el('form','cod-entry-form cod-cash-add-form');
+  const amt=el('input');amt.type='number';amt.min='.01';amt.step='.01';amt.placeholder='0.00';amt.required=true;
+  const ref=el('input');ref.maxLength=140;ref.placeholder='Parcel CID / reason';ref.required=true;
+  const mk=(label,input)=>{const wrap=el('label');wrap.append(el('span','',label),input);return wrap;};
+  const submit=el('button','btn btn-primary','+ Add COD Cash');submit.type='submit';
+  form.append(mk('Amount (BDT)',amt),mk('CID / Reference',ref),submit);
+  form.addEventListener('submit',event=>{
+    event.preventDefault();if(!ensureReady())return;
+    const amount=parseMoney(amt.value),reference=ref.value.trim().slice(0,140);
+    if(amount===null||amount<=0)return alert('Enter a valid positive cash COD amount.');
+    if(!reference)return alert('Enter CID or unique reference.');
+    if(dayAdditions(d).some(a=>normalizedName(a.reference)===normalizedName(reference)))
+      return alert('This CID/reference was already added to Panel COD for this date.');
+    d.codAdditions=dayAdditions(d).concat({id:uid(),riderId:r.id,amount,reference});
+    persist();render();notice('Added '+money(amount)+' to '+r.name+' Panel COD. Total COD and Due updated.');
+  });
+  outer.append(form);
+  const entries=dayAdditions(d).filter(a=>a.riderId===r.id);
+  outer.append(el('h4','cod-subtitle','Panel COD Cash History'));
+  if(!entries.length)outer.append(el('p','cod-empty','No extra cash COD added for this rider.'));
+  else{
+    const list=el('div','cod-cash-history');
+    for(const entry of entries.slice().reverse()){
+      const line=el('div','cod-cash-item');
+      const info=el('div','cod-cash-entry-info');
+      info.append(el('strong','',money(entry.amount)),el('small','',entry.reference));
+      const actions=el('div','cod-cash-entry-actions');
+      actions.append(button('Edit',()=>{
+        if(!ensureReady())return;
+        const newAmount=prompt('Edit Panel COD cash amount (BDT)',centsToInput(entry.amount));
+        if(newAmount===null)return;
+        const amount=parseMoney(newAmount);
+        if(amount===null||amount<=0)return alert('Invalid positive amount.');
+        const reference=prompt('Edit CID / Reference',entry.reference);
+        if(reference===null)return;
+        const cleaned=reference.trim().slice(0,140);
+        if(!cleaned)return alert('CID / reference required.');
+        if(dayAdditions(d).some(a=>a.id!==entry.id&&normalizedName(a.reference)===normalizedName(cleaned)))
+          return alert('Duplicate CID/reference.');
+        const oldAmount=entry.amount,oldRef=entry.reference;
+        entry.amount=amount;entry.reference=cleaned;
+        if(d.riders.some(person=>effectiveCOD(d,person.id)<0)){
+          entry.amount=oldAmount;entry.reference=oldRef;
+          return alert('Cannot reduce cash COD: linked transfers exceed remaining assigned COD.');
+        }
+        persist();render();notice('Panel COD cash entry updated.');
+      }));
+      actions.append(button('Remove',()=>{
+        if(!ensureReady()||!confirm('Remove '+money(entry.amount)+' added cash COD?'))return;
+        const next=dayAdditions(d).filter(a=>a.id!==entry.id);
+        const previous=d.codAdditions;d.codAdditions=next;
+        if(d.riders.some(person=>effectiveCOD(d,person.id)<0)){
+          d.codAdditions=previous;
+          return alert('Cannot remove: this COD was already transferred to another rider.');
+        }
+        persist();render();notice('Panel COD cash entry removed.');
+      },'cod-danger'));
+      line.append(info,actions);list.append(line);
+    }
+    outer.append(list);
+  }
+  card.append(outer);
+}
 function table(payments,onRemove,onEdit){const scroll=el('div','cod-table-scroll'),tab=el('table','cod-table'),thead=el('thead'),head=el('tr');['Method','Amount','Reference','Action'].forEach(h=>head.append(el('th','',h)));thead.append(head);tab.append(thead);const body=el('tbody');if(!payments.length){const row=el('tr'),td=el('td','cod-empty','No payments recorded');td.colSpan=4;row.append(td);body.append(row);}payments.forEach(p=>{const row=el('tr');[p.method,money(p.amount),p.reference||'—'].forEach(t=>row.append(el('td','',t)));const action=el('td');action.append(button('Edit',()=>onEdit(p.id)));action.append(button('Remove',()=>onRemove(p.id),'cod-danger'));row.append(action);body.append(row);});tab.append(body);scroll.append(tab);return scroll;}
 
 /* Transaction edit — updates existing payment records (never adds duplicates). */
@@ -593,12 +661,36 @@ function render(){
     const card=el('article','cod-rider cod-rider-focus');
     const top=el('div','cod-rider-head'), actions=el('div','cod-rider-actions');
     actions.append(button('Send Due to KM',()=>sendToKM(r.id)));
+    actions.append(button('Rename Rider',()=>{
+      if(!ensureReady())return;
+      const n=prompt('Rider name (updates this rider across all work dates):',r.name);
+      if(!n||!n.trim())return;
+      const name=n.trim().slice(0,90),old=r.name;
+      if(normalizedName(name)===normalizedName(old))return;
+      if(riderRoster.some(z=>z.id!==r.id&&normalizedName(z.name)===normalizedName(name)))
+        return alert('Rider with this name already exists.');
+      const member=riderRoster.find(z=>z.id===r.id||normalizedName(z.name)===normalizedName(old));
+      if(!member)return alert('This is a historical rider. Add it to the shared list before renaming.');
+      // The roster controls future dates. Older completed ledgers retain
+      // their original rider labels until explicitly edited.
+      member.name=name;r.name=name;rosterDirty=true;
+      persist();render();
+      notice('Rider renamed for this date and future work dates. Older financial records are unchanged.');
+    }));
     actions.append(button('Remove Rider',()=>{
       if(!confirm('Remove '+r.name+' and all the entries for this work date?'))return;
       if(transfersOf(d).some(t=>t.fromId===r.id||t.toId===r.id)){
         alert('This rider has COD transfers. Remove or edit those transfers before deleting the rider.');return;
       }
       d.riders=d.riders.filter(item=>item.id!==r.id);
+      const rosterIndex=riderRoster.findIndex(z=>z.id===r.id||
+        normalizedName(z.name)===normalizedName(r.name));
+      if(rosterIndex>=0){
+        if(!confirm('Also remove this rider from future work dates? Older saved dates will be kept.')){
+          selectedRiderId=null;persist();render();return;
+        }
+        riderRoster.splice(rosterIndex,1);rosterDirty=true;
+      }
       selectedRiderId=null;persist();render();
     },'cod-danger'));
     top.append(actions);card.append(top);
@@ -637,9 +729,18 @@ function render(){
     if(r.sent)card.append(el('small','cod-memo',
       'This rider/date already has a COD Due transfer to KM Tracker. Changes here do not adjust that deduction automatically.'));
 
+    renderCODCashAdditions(card,d,r);
+
     // Transactions are entered and reviewed before transferring rider COD.
     card.append(el('h4','cod-subtitle','Add Transaction'));
-    addPaymentForm(card,p=>{r.payments.push(p);persist();render();});
+    addPaymentForm(card,p=>{
+      const before=Math.max(0,effectiveCOD(d,r.id)-sums(r).paid);
+      r.payments.push(p);
+      const after=Math.max(0,effectiveCOD(d,r.id)-sums(r).paid);
+      persist();render();
+      notice('Transaction recorded: '+money(p.amount)+'. Rider Due: '+money(before)+' → '+money(after)+
+        (after===before?' (already fully paid; any extra is overpaid).':''));
+    });
     card.append(el('h4','cod-subtitle','Transaction History'));
     card.append(table(r.payments,id=>{
       if(!confirm('Remove this payment?'))return;
@@ -685,7 +786,19 @@ const amount=effectiveCOD(current(),r.id)-sums(r).paid;if(amount<=0)return alert
 const payload={version:1,sourceId:'cod-'+today()+'-'+r.id,riderName:r.name,date:today(),amountCents:amount,createdAt:Date.now()};try{sessionStorage.setItem('adjoy:cod-km-handoff:v1',JSON.stringify(payload));}catch(e){return alert('Browser session storage unavailable.');}
 const route='#page='+encodeURIComponent('pages/rider-km-tracker/rider-km-tracker.html');try{if(window.parent!==window&&window.parent.location.origin===window.location.origin)window.parent.location.hash=route;else location.href='../rider-km-tracker/rider-km-tracker.html';}catch(e){location.href='../rider-km-tracker/rider-km-tracker.html';}}
 x('codDate').addEventListener('change',()=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(today()))return;render();});
-x('codAddRider').addEventListener('click',()=>{const n=prompt('Rider name:');if(!n||!n.trim())return;const d=current();if(d.riders.some(r=>r.name.toLowerCase()===n.trim().toLowerCase()))return alert('Rider already exists for this day.');const rider={id:uid(),name:n.trim().slice(0,90),cod:0,payments:[],remarks:'',sent:false};d.riders.push(rider);selectedRiderId=rider.id;persist();render();});
+x('codAddRider').addEventListener('click',()=>{
+  if(!ensureReady())return;
+  const n=prompt('New rider name (shared across work dates):');
+  if(!n||!n.trim())return;
+  const name=n.trim().slice(0,90),d=current();
+  if(riderRoster.some(r=>normalizedName(r.name)===normalizedName(name))||
+     d.riders.some(r=>normalizedName(r.name)===normalizedName(name)))
+    return alert('Rider already exists.');
+  if(riderRoster.length>=150)return alert('Maximum rider limit reached.');
+  const id=uid();riderRoster.push({id,name});rosterDirty=true;
+  d.riders.push(dayRider({id,name}));selectedRiderId=id;
+  persist();render();
+});
 x('agentForm').addEventListener('submit',e=>{e.preventDefault();const v=parseMoney(x('agentAmount').value);if(v===null||v<=0)return alert('Invalid agent payment amount.');current().agent.push({id:uid(),method:x('agentMethod').value,amount:v,reference:x('agentReference').value.trim().slice(0,140)});persist();x('agentForm').reset();render();});
 function download(name,content,type){const b=new Blob([content],{type}),url=URL.createObjectURL(b),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 x('codExport').addEventListener('click',()=>{
@@ -698,6 +811,9 @@ x('codExport').addEventListener('click',()=>{
     for(const p of r.payments)
       lines.push([today(),'Rider payment',r.name,'',p.method,centsToInput(p.amount),'','',p.reference,'','']);
   }
+  for(const a of dayAdditions(d))
+    lines.push([today(),'Added Panel COD cash',names.get(a.riderId)||'',
+      centsToInput(a.amount),'','','','',a.reference,'','']);
   for(const t of transfersOf(d))
     lines.push([today(),'COD transfer','','','',centsToInput(t.amount),'','',t.reference,
       names.get(t.fromId)||'',names.get(t.toId)||'']);
@@ -730,7 +846,7 @@ x('codRestore').addEventListener('change',async e=>{
         const snap=await tx.get(ref);
         if(snap.exists)return false;
         tx.set(ref,{
-          date,riders:value.riders,agent:value.agent,transfers:value.transfers||[],revision:1,
+          date,riders:value.riders,agent:value.agent,transfers:value.transfers||[],codAdditions:value.codAdditions||[],revision:1,
           expiresAt:firebase.firestore.Timestamp.fromMillis(expiryMs(date)),
           updatedAt:firebase.firestore.FieldValue.serverTimestamp()
         });
