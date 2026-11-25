@@ -33,6 +33,8 @@ function normalizeDayRiders(day){
   if(!day||!Array.isArray(day.riders))return;
   // Never rename or erase a rider carrying historical money or transfers.
   for(const person of riderRoster){
+    const sameId=day.riders.find(r=>r.id===person.id);
+    if(sameId){sameId.name=person.name;continue;}
     if(day.riders.some(r=>normalizedName(r.name)===normalizedName(person.name)))continue;
     const old=day.riders.find(r=>/^Rider [1-5]$/.test(r.name)&&
       !r.cod&&!r.payments.length&&!dayAdditions(day).some(a=>a.riderId===r.id)&&
@@ -91,6 +93,7 @@ function syncUi(){
 }
 function validateDay(v){
   if(!v||!Array.isArray(v.riders)||!Array.isArray(v.agent)||v.riders.length>150)throw Error('Invalid COD day structure');
+  if(new Set(v.riders.map(r=>r.id)).size!==v.riders.length)throw Error('Duplicate rider IDs');
   const riders=new Set();
   for(const r of v.riders){
     if(!r||typeof r.id!=='string'||typeof r.name!=='string'||r.name.length>90||
@@ -686,9 +689,6 @@ function render(){
       const rosterIndex=riderRoster.findIndex(z=>z.id===r.id||
         normalizedName(z.name)===normalizedName(r.name));
       if(rosterIndex>=0){
-        if(!confirm('Also remove this rider from future work dates? Older saved dates will be kept.')){
-          selectedRiderId=null;persist();render();return;
-        }
         riderRoster.splice(rosterIndex,1);rosterDirty=true;
       }
       selectedRiderId=null;persist();render();
@@ -785,7 +785,7 @@ try{
 const amount=effectiveCOD(current(),r.id)-sums(r).paid;if(amount<=0)return alert('No outstanding COD due for this rider.');if(r.sent)return alert('Due was already sent for this rider/date. Adjust previously sent entry manually in KM Tracker.');const message='Record COD outstanding '+money(amount)+' for '+r.name+' on '+today()+' as a deduction from the rider KM balance? This is NOT a new KM earning and will not auto-adjust if you later collect more COD.';if(!confirm(message))return;
 const payload={version:1,sourceId:'cod-'+today()+'-'+r.id,riderName:r.name,date:today(),amountCents:amount,createdAt:Date.now()};try{sessionStorage.setItem('adjoy:cod-km-handoff:v1',JSON.stringify(payload));}catch(e){return alert('Browser session storage unavailable.');}
 const route='#page='+encodeURIComponent('pages/rider-km-tracker/rider-km-tracker.html');try{if(window.parent!==window&&window.parent.location.origin===window.location.origin)window.parent.location.hash=route;else location.href='../rider-km-tracker/rider-km-tracker.html';}catch(e){location.href='../rider-km-tracker/rider-km-tracker.html';}}
-x('codDate').addEventListener('change',()=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(today()))return;render();});
+x('codDate').addEventListener('change',()=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(today()))return;syncUi();render();});
 x('codAddRider').addEventListener('click',()=>{
   if(!ensureReady())return;
   const n=prompt('New rider name (shared across work dates):');
