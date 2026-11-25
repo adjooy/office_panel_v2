@@ -3,7 +3,7 @@
 <title>COD Collection · AD JOY PANEL</title>
 <link rel="stylesheet" href="../../assets/css/base.css">
 <link rel="stylesheet" href="../../assets/css/panel-theme.css">
-<link rel="stylesheet" href="cod-collection.css?v=20261125-simple-cod-1">
+<link rel="stylesheet" href="cod-collection.css?v=20261125-simple-cod-2">
 </head><body class="cod-locked"><main class="page-content">
 <header class="page-head cod-page-header"><div><h1 class="page-title">COD Collection</h1>
 <p class="page-sub">Rider collection and payment-agent settlement · Firebase-synced daily ledger</p></div>
@@ -26,16 +26,6 @@
     <div class="cod-rider-overview-title"><div><h3>Rider-wise Collection</h3><p>Adjusted COD, collected amount and remaining due for every rider</p></div></div>
     <div id="codRiderOverview" class="cod-rider-overview" aria-live="polite"></div>
   </div>
-</section>
-<section class="card cod-section cod-agent-overview" aria-labelledby="codAgentOverviewTitle">
-  <div class="cod-section-head"><div><h2 id="codAgentOverviewTitle">Payment Agent</h2>
-  <span>Agent payment compared with total COD</span></div></div>
-  <div class="cod-agent-overview-grid cod-agent-overview-simple" aria-live="polite">
-    <div class="cod-agent-overview-item"><small>Paid to Agent</small><strong id="agentPaid">৳0.00</strong></div>
-    <div class="cod-agent-overview-item cod-agent-overview-difference"><small>Difference from COD</small><strong id="agentBalance">৳0.00</strong></div>
-  </div>
-  <p id="agentCodExplanation" class="cod-agent-explanation"></p>
-  <div hidden aria-hidden="true"><span id="agentExpectedCOD"></span><span id="agentCollectedTotal"></span><span id="agentVsCollected"></span></div>
 </section>
 <section class="card cod-section cod-rider-section">
   <div class="cod-section-head"><div><h2>Rider Collection</h2><span>Choose a rider to view and update only their ledger</span></div></div>
@@ -65,7 +55,16 @@
 </section>
 </div>
 </section>
-<section class="card cod-section cod-agent-transactions"><div class="cod-section-head"><h2>Agent Transactions</h2></div>
+<section class="card cod-section cod-agent-overview" aria-labelledby="codAgentOverviewTitle">
+<div class="cod-section-head"><div><h2 id="codAgentOverviewTitle">Payment Agent</h2><span>Agent settlement and payments</span></div></div>
+<div class="cod-agent-overview-grid cod-agent-overview-simple" aria-live="polite">
+    <div class="cod-agent-overview-item"><small>Paid to Agent</small><strong id="agentPaid">৳0.00</strong></div>
+    <div class="cod-agent-overview-item cod-agent-overview-difference"><small>Difference from COD</small><strong id="agentBalance">৳0.00</strong></div>
+  </div>
+  <p id="agentCodExplanation" class="cod-agent-explanation"></p>
+  <div hidden aria-hidden="true"><span id="agentExpectedCOD"></span><span id="agentCollectedTotal"></span><span id="agentVsCollected"></span></div>
+
+<h3 class="cod-subtitle cod-agent-form-title">Add Agent Payment</h3>
 <form id="agentForm" class="cod-entry-form">
 <label>Method<select id="agentMethod"><option>Cash</option><option>bKash</option><option>Nagad</option><option>Rocket</option><option>Bank Transfer</option><option>Other</option></select></label>
 <label>Amount (BDT)<input id="agentAmount" type="number" min="0.01" step="0.01" required placeholder="0.00"></label>
@@ -97,4 +96,4 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="cod-collection.js?v=20261125-simple-cod-1"></script></body></html>
+<script src="cod-collection.js?v=20261125-simple-cod-2"></script></body></html>
