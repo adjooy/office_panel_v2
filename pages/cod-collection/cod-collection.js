@@ -351,6 +351,18 @@ function button(label,fn,cls=''){const b=el('button','cod-action '+cls,label);b.
 function field(label,value,handler,type='text'){const wrap=el('label');wrap.append(el('span','',label));const input=el('input');input.type=type;input.value=value;input.addEventListener('change',()=>handler(input.value,input));wrap.append(input);return wrap;}
 function addPaymentForm(container,callback){const f=el('form','cod-entry-form');const method=el('select');for(const m of methods){const o=el('option','',m);o.value=m;method.append(o);}const amount=el('input');amount.type='number';amount.min='.01';amount.step='.01';amount.placeholder='0.00';amount.required=true;const ref=el('input');ref.maxLength=140;ref.placeholder='Reference / note';for(const [label,input] of [['Amount (BDT)',amount],['Type',method],['Reference',ref]]){const wrap=el('label');wrap.append(el('span','',label),input);f.append(wrap);}const b=el('button','btn btn-primary','+ Add Payment');b.type='submit';f.append(b);f.addEventListener('submit',e=>{e.preventDefault();const v=parseMoney(amount.value);if(v===null||v<=0)return alert('Enter a valid positive amount (maximum two decimals).');callback({id:uid(),method:method.value,amount:v,reference:ref.value.trim().slice(0,140)});f.reset();});container.append(f);}
 
+const codHistoryOpen={cod:false,transaction:false};
+function makeHistory(title,count,key,content){
+  const section=el('details','cod-history-details');
+  section.open=codHistoryOpen[key];
+  const summary=el('summary','',title+' ('+count+')');
+  section.append(summary,content);
+  section.addEventListener('toggle',()=>{
+    // Discard async toggle events from sections replaced during render().
+    if(section.isConnected)codHistoryOpen[key]=section.open;
+  });
+  return section;
+}
 function renderCODCashAdditions(card,d,r){
   const outer=el('section','cod-cash-add-section');
   outer.append(el('h4','cod-subtitle','Add Cash to COD'));
@@ -375,10 +387,10 @@ function renderCODCashAdditions(card,d,r){
   });
   outer.append(form);
   const entries=dayAdditions(d).filter(a=>a.riderId===r.id);
-  outer.append(el('h4','cod-subtitle','COD Entry History'));
-  if(!entries.length && !r.cod)outer.append(el('p','cod-empty','No COD entered for this rider.'));
+  const historyItems=el('div','cod-cash-history');
+  if(!entries.length && !r.cod)historyItems.append(el('p','cod-empty','No COD entered for this rider.'));
   else{
-    const list=el('div','cod-cash-history');
+    const list=historyItems;
     if(r.cod>0){
       const legacy=el('div','cod-cash-item');
       const info=el('div','cod-cash-entry-info');
@@ -424,8 +436,8 @@ function renderCODCashAdditions(card,d,r){
       },'cod-danger'));
       line.append(info,actions);list.append(line);
     }
-    outer.append(list);
   }
+  outer.append(makeHistory('COD Entry History',entries.length+(r.cod>0?1:0),'cod',historyItems));
   card.append(outer);
 }
 function table(payments,onRemove,onEdit){const scroll=el('div','cod-table-scroll'),tab=el('table','cod-table'),thead=el('thead'),head=el('tr');['Method','Amount','Reference','Action'].forEach(h=>head.append(el('th','',h)));thead.append(head);tab.append(thead);const body=el('tbody');if(!payments.length){const row=el('tr'),td=el('td','cod-empty','No payments recorded');td.colSpan=4;row.append(td);body.append(row);}payments.forEach(p=>{const row=el('tr');[p.method,money(p.amount),p.reference||'—'].forEach(t=>row.append(el('td','',t)));const action=el('td');action.append(button('Edit',()=>onEdit(p.id)));action.append(button('Remove',()=>onRemove(p.id),'cod-danger'));row.append(action);body.append(row);});tab.append(body);scroll.append(tab);return scroll;}
@@ -552,6 +564,7 @@ function renderTransferUI(d){
   if(!rider)return;
   // Show transactions relevant to this rider only; editing stays with sender.
   const related=transfersOf(d).filter(t=>t.fromId===riderId||t.toId===riderId);
+  x('codTransferHistoryCount').textContent='('+related.length+')';
   if(!related.length)panel.append(el('p','cod-empty','No COD transfers for this rider yet.'));
   const names=new Map(d.riders.map(r=>[r.id,r.name]));
   for(const t of related.slice().reverse()){
@@ -792,7 +805,9 @@ function render(){
       }
       selectedRiderId=null;persist();render();
     },'cod-danger'));
-    top.append(actions);card.append(top);
+    const toolsDetail=el('details','cod-rider-tools');
+    toolsDetail.append(el('summary','', 'Rider settings'),actions);
+    top.append(toolsDetail);card.append(top);
 
     const metrics=el('div','cod-rider-metrics');
     for(const [name,val,extra] of [
@@ -840,12 +855,12 @@ function render(){
       const feedback=el('p','cod-transaction-feedback',transactionFeedback.text);
       feedback.id='codTransactionFeedback';card.append(feedback);
     }
-    card.append(el('h4','cod-subtitle','Transaction History'));
-    card.append(table(r.payments,id=>{
+    const paymentsTable=table(r.payments,id=>{
       if(!confirm('Remove this payment?'))return;
       r.payments=r.payments.filter(p=>p.id!==id);
       persist();render();
-    },id=>openEditPayment('rider',r.id,id)));
+    },id=>openEditPayment('rider',r.id,id));
+    card.append(makeHistory('Transaction History',r.payments.length,'transaction',paymentsTable));
     // Reuse the live transfer form node, preserving attached event listeners.
     card.append(transferPanelNode);
     target.append(card);
@@ -853,6 +868,7 @@ function render(){
 
   if(r)renderTransferUI(d);
   const at=x('agentRows');
+  x('codAgentHistoryCount').textContent='('+d.agent.length+')';
   at.replaceChildren();
   if(!d.agent.length){
     const tr=el('tr'),td=el('td','cod-empty','No agent payments recorded');
@@ -878,6 +894,37 @@ function render(){
     tr.append(td);at.append(tr);
   }
 }
+
+/* Two accessible workspaces share the same daily Firebase record; tabs only
+   change visibility, never the data, selected date or calculation rules. */
+function selectCODTab(tab,moveFocus=false){
+  const next=tab==='agent'?'agent':'rider';
+  for(const [name,buttonId,panelId] of [
+    ['rider','codRiderTab','codRiderTabPanel'],
+    ['agent','codAgentTab','codAgentTabPanel']
+  ]){
+    const active=name===next;
+    const btn=x(buttonId);
+    const panel=x(panelId);
+    btn.setAttribute('aria-selected',String(active));
+    btn.tabIndex=active?0:-1;
+    btn.classList.toggle('is-active',active);
+    panel.hidden=!active;
+    if(active&&moveFocus)btn.focus();
+  }
+}
+for(const [name,id] of [['rider','codRiderTab'],['agent','codAgentTab']]){
+  x(id).addEventListener('click',()=>selectCODTab(name));
+  x(id).addEventListener('keydown',event=>{
+    if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+    event.preventDefault();
+    const next=event.key==='Home'?'rider':event.key==='End'?'agent':
+      name==='rider'?'agent':'rider';
+    selectCODTab(next,true);
+  });
+}
+selectCODTab('rider');
+
 x('codRiderSelect').addEventListener('change',e=>{
   if(editingTransferId)resetTransferEditor();
   selectedRiderId=e.target.value;render();
