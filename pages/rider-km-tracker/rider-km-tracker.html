@@ -1427,20 +1427,6 @@ const Entries = (() => {
     document.getElementById('entryRate').value = '3.5';
     document.getElementById('entryPaid').value = '0';
     document.getElementById('entryNote').value = '';
-    function kmShiftEntryDate(dayDelta){
-  const input=document.getElementById('entryDate');
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(input.value))return;
-  // UTC arithmetic avoids DST/month-boundary jumps.
-  const day=new Date(input.value+'T00:00:00Z');
-  if(Number.isNaN(day.getTime()))return;
-  day.setUTCDate(day.getUTCDate()+dayDelta);
-  const next=day.toISOString().slice(0,10);
-  if(next==='0000-00-00')return;
-  input.value=next;
-  input.dispatchEvent(new Event('change',{bubbles:true}));
-}
-document.getElementById('kmPrevDate').addEventListener('click',()=>kmShiftEntryDate(-1));
-document.getElementById('kmNextDate').addEventListener('click',()=>kmShiftEntryDate(1));
 document.getElementById('entryDate').value = todayISO();
     preview();
   }
@@ -1990,6 +1976,19 @@ const App = {
   },
   renderAuditLog: auditRows
 };
+
+/* Date arrows are initialized once, on page load (not within Entries.clear). */
+function kmShiftEntryDate(dayDelta){
+  const input=document.getElementById('entryDate');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(input.value))return;
+  const date=new Date(input.value+'T00:00:00Z');
+  if(Number.isNaN(date.getTime()))return;
+  date.setUTCDate(date.getUTCDate()+dayDelta);
+  input.value=date.toISOString().slice(0,10);
+  input.dispatchEvent(new Event('change',{bubbles:true}));
+}
+document.getElementById('kmPrevDate').addEventListener('click',()=>kmShiftEntryDate(-1));
+document.getElementById('kmNextDate').addEventListener('click',()=>kmShiftEntryDate(1));
 
 document.getElementById('entryDate').value = todayISO();
 document.getElementById('reportMonth').value = todayISO().slice(0,7);
