@@ -354,10 +354,14 @@ function renderCODCashAdditions(card,d,r){
   outer.append(el('p','cod-cash-help','Enter assigned COD here. When a rider pays you, use Add Transaction below to reduce Due.'));
   const form=el('form','cod-entry-form cod-cash-add-form');
   const amt=el('input');amt.type='number';amt.min='.01';amt.step='.01';amt.placeholder='0.00';amt.required=true;
+  const category=el('select');
+  for(const value of ['Cash','Online']){
+    const option=el('option','',value);option.value=value;category.append(option);
+  }
   const ref=el('input');ref.maxLength=140;ref.placeholder='Parcel CID / reason';ref.required=true;
   const mk=(label,input)=>{const wrap=el('label');wrap.append(el('span','',label),input);return wrap;};
   const submit=el('button','btn btn-primary','+ Add Cash to COD');submit.type='submit';
-  form.append(mk('Amount (BDT)',amt),mk('CID / Reference',ref),submit);
+  form.append(mk('Amount (BDT)',amt),mk('Type',category),mk('CID / Reference',ref),submit);
   form.addEventListener('submit',event=>{
     event.preventDefault();if(!ensureReady())return;
     const amount=parseMoney(amt.value),reference=ref.value.trim().slice(0,140);
@@ -365,7 +369,7 @@ function renderCODCashAdditions(card,d,r){
     if(!reference)return alert('Enter CID or unique reference.');
     if(dayAdditions(d).some(a=>normalizedName(a.reference)===normalizedName(reference)))
       return alert('This CID/reference was already added to Panel COD for this date.');
-    d.codAdditions=dayAdditions(d).concat({id:uid(),riderId:r.id,amount,reference});
+    d.codAdditions=dayAdditions(d).concat({id:uid(),riderId:r.id,amount,type:category.value,reference});
     persist();render();notice('Added '+money(amount)+' to '+r.name+' Panel COD. Total COD and Due updated.');
   });
   outer.append(form);
@@ -383,7 +387,7 @@ function renderCODCashAdditions(card,d,r){
     for(const entry of entries.slice().reverse()){
       const line=el('div','cod-cash-item');
       const info=el('div','cod-cash-entry-info');
-      info.append(el('strong','',money(entry.amount)),el('small','',entry.reference));
+      info.append(el('strong','',money(entry.amount)),el('small','',(entry.type||'Cash')+' · '+entry.reference));
       const actions=el('div','cod-cash-entry-actions');
       actions.append(button('Edit',()=>{
         if(!ensureReady())return;
@@ -832,7 +836,15 @@ function render(){
   }
   for(const p of d.agent){
     const tr=el('tr');
-    [p.method,money(p.amount),p.reference||'—'].forEach(v=>tr.append(el('td','',v)));
+    tr.append(el('td','',p.method),el('td','',money(p.amount)));
+    const referenceCell=el('td','',p.reference||'—');
+    if(p.notes){
+      const breakdown=el('small','cod-agent-note-breakdown','Notes: '+noteDescription(p.notes));
+      referenceCell.append(breakdown);
+    }else if(p.method==='Cash'){
+      referenceCell.append(el('small','cod-agent-note-unknown','Note counts not recorded'));
+    }
+    tr.append(referenceCell);
     const td=el('td');
     td.append(button('Edit',()=>openEditPayment('agent',null,p.id)));
     td.append(button('Remove',()=>{
@@ -906,6 +918,89 @@ x('agentForm').addEventListener('submit',e=>{
   x('agentForm').reset();render();
   saved.then(ok=>notice(ok?'Agent payment and note breakdown saved to Firebase.':'Agent payment save failed. Check cloud status.'));
 });
+
+function generateAgentReportJpg(){
+  const day=current();
+  const entries=day.agent||[];
+  if(!entries.length)return alert('No agent payments saved for this work date.');
+  const cash=entries.filter(p=>p.method==='Cash');
+  const online=entries.filter(p=>p.method!=='Cash');
+  const sum=list=>list.reduce((n,p)=>n+p.amount,0);
+  const counted={};
+  for(const denomination of NOTE_VALUES)counted[denomination]=0;
+  let notCounted=0;
+  for(const p of cash){
+    if(p.notes){for(const denom of NOTE_VALUES)counted[denom]+=p.notes[denom]||0;}
+    else notCounted+=p.amount;
+  }
+  const width=1200,height=1540;
+  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+  const g=canvas.getContext('2d');
+  if(!g)return alert('JPG report unavailable in this browser.');
+  g.fillStyle='#f4f7fc';g.fillRect(0,0,width,height);
+  const rounded=(x,y,w,h,r,fill)=>{
+    g.fillStyle=fill;g.beginPath();g.roundRect(x,y,w,h,r);g.fill();
+  };
+  const label=(value,x,y,size=26,bold=false,color='#263654',align='left')=>{
+    g.textAlign=align;g.textBaseline='alphabetic';
+    g.font=(bold?'700 ':'400 ')+size+'px Arial, sans-serif';g.fillStyle=color;
+    g.fillText(String(value),x,y);
+  };
+  const m=value=>'BDT '+(value/100).toLocaleString('en-BD',{minimumFractionDigits:2,maximumFractionDigits:2});
+  rounded(48,42,1104,1456,22,'#ffffff');
+  rounded(48,42,1104,128,22,'#17386a');g.fillStyle='#17386a';g.fillRect(48,115,1104,55);
+  label('AGENT CASH HANDOVER REPORT',86,108,36,true,'#ffffff');
+  label('AD JOY PANEL  |  Work Date: '+today(),86,149,21,false,'#e2eaff');
+  label('Payment Summary',85,230,30,true);
+  rounded(85,260,1030,142,14,'#eef4ff');
+  label('Total to Agent',112,313,22,false);
+  label(m(sum(entries)),112,366,38,true,'#1b3d77');
+  label('Cash: '+m(sum(cash)),720,315,22,true);
+  label('Online / Other: '+m(sum(online)),720,359,21,false);
+  label('Cash Note Denominations',85,466,30,true);
+  label('Denomination',114,515,20,true,'#5a6e8c');
+  label('Quantity',665,515,20,true,'#5a6e8c');
+  label('Amount',1080,515,20,true,'#5a6e8c','right');
+  let y=540,totalCount=0,countedCash=0;
+  for(const denomination of NOTE_VALUES){
+    const qty=counted[denomination]||0;
+    totalCount+=qty;countedCash+=denomination*qty*100;
+    if(y%2===0)rounded(92,y,1004,53,5,'#f6f8fc');
+    label('BDT '+denomination,114,y+36,21);
+    label(qty,681,y+36,22,true,'#263654','center');
+    label(m(denomination*qty*100),1080,y+36,22,true,'#263654','right');
+    y+=57;
+  }
+  rounded(90,1064,1008,75,12,'#e8f6ed');
+  label('Total notes: '+totalCount,114,1110,24,true,'#176846');
+  label(m(countedCash),1080,1110,28,true,'#176846','right');
+  if(notCounted){
+    rounded(90,1153,1008,70,10,'#fff4e6');
+    label('Cash without saved note counts',114,1195,21,true,'#8b5a17');
+    label(m(notCounted),1080,1195,23,true,'#8b5a17','right');
+  }else{
+    label('All saved cash payments have recorded note counts.',104,1200,20,false,'#5c708d');
+  }
+  label('Other Payment Methods',85,1271,26,true);
+  const byMethod=new Map();
+  for(const p of online)byMethod.set(p.method,(byMethod.get(p.method)||0)+p.amount);
+  const otherText=byMethod.size?[...byMethod].map(([key,value])=>key+': '+m(value)).join('   |   '):'None';
+  // Wrap long method lines on narrow report space.
+  const segments=otherText.match(/.{1,74}(?:\s|$)|.{1,74}/g)||[otherText];
+  segments.slice(0,3).forEach((part,i)=>label(part.trim(),104,1314+i*30,19,false,'#3c526f'));
+  g.strokeStyle='#d7e1ef';g.lineWidth=2;g.beginPath();g.moveTo(85,1406);g.lineTo(1114,1406);g.stroke();
+  label('Prepared for agent handover',85,1452,20,false,'#64748b');
+  label('Report generated from saved COD Collection entries',1114,1452,17,false,'#64748b','right');
+  canvas.toBlob(blob=>{
+    if(!blob){alert('Could not generate JPG.');return;}
+    const url=URL.createObjectURL(blob),anchor=document.createElement('a');
+    anchor.href=url;anchor.download='Agent_Cash_Handover_'+today()+'.jpg';
+    document.body.append(anchor);anchor.click();anchor.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+  },'image/jpeg',0.93);
+}
+x('codAgentJpg').addEventListener('click',generateAgentReportJpg);
+
 function download(name,content,type){const b=new Blob([content],{type}),url=URL.createObjectURL(b),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 x('codExport').addEventListener('click',()=>{
   const headers=['Date','Type','Rider','Effective COD','Payment Method','Payment Amount','Due','Overpaid','Reference / Remarks','From Rider','To Rider'];
@@ -924,7 +1019,8 @@ x('codExport').addEventListener('click',()=>{
     lines.push([today(),'COD transfer','','','',centsToInput(t.amount),'','',t.reference,
       names.get(t.fromId)||'',names.get(t.toId)||'']);
   for(const p of d.agent)
-    lines.push([today(),'Agent payment','','',p.method,centsToInput(p.amount),'','',p.reference,'','']);
+    lines.push([today(),'Agent payment','','',p.method,centsToInput(p.amount),'','',
+      p.reference+(p.notes?' | Notes: '+noteDescription(p.notes):''),'','']);
   const csv='\uFEFF'+lines.map(row=>row.map(v=>{
     let value=String(v??'');
     // Avoid spreadsheet formula injection from user-entered notes/names.
