@@ -678,7 +678,13 @@ function render(){
   const overview=x('codRiderOverview');
   overview.replaceChildren();
   if(!d.riders.length)overview.append(el('p','cod-empty','No riders for this date.'));
-  for(const rider of d.riders){
+  // Reorder only the overview display: selected rider appears first without
+  // changing stored rider order, payment history, Firebase records or totals.
+  const ridersInOverview=selectedRiderId
+    ? [...d.riders.filter(r=>r.id===selectedRiderId),
+       ...d.riders.filter(r=>r.id!==selectedRiderId)]
+    : d.riders;
+  for(const rider of ridersInOverview){
     const original=originalCOD(d,rider.id);
     const adjusted=effectiveCOD(d,rider.id);
     const movement=transferAmounts(d,rider.id);
@@ -688,11 +694,16 @@ function render(){
     const status=difference>0?'Pending':difference<0?'Overpaid':'Paid';
     const statusAmount=Math.abs(difference);
     const card=el('div','cod-rider-overview-card');
+    const isSelected=rider.id===selectedRiderId;
+    card.classList.toggle('is-selected',isSelected);
+    card.setAttribute('aria-pressed',String(isSelected));
     card.tabIndex=0;
     card.setAttribute('role','button');
     card.setAttribute('aria-label','Open '+rider.name+' collection details');
     const top=el('div','cod-rider-overview-top');
-    top.append(el('strong','cod-rider-overview-name',rider.name),
+    const riderName=el('strong','cod-rider-overview-name',rider.name);
+    if(isSelected)riderName.append(el('span','cod-rider-selected-label','SELECTED'));
+    top.append(riderName,
       el('span','cod-rider-overview-status '+(difference>0?'is-pending':difference<0?'is-overpaid':'is-paid'),status));
     const metrics=el('div','cod-rider-overview-values');
     for(const [label,value,cls] of [
@@ -767,6 +778,8 @@ function render(){
     }catch(err){}
 
     const {paid}=sums(r);
+    const riderCashPaid=r.payments.reduce((n,p)=>n+(p.method==='Cash'?p.amount:0),0);
+    const riderOnlinePaid=paid-riderCashPaid;
     const riderOriginal=originalCOD(d,r.id),riderMovement=transferAmounts(d,r.id);
     const riderCOD=effectiveCOD(d,r.id),diff=riderCOD-paid;
     const status=diff>0?'Due '+money(diff):diff<0?'Overpaid '+money(-diff):'Fully settled';
@@ -818,6 +831,15 @@ function render(){
     ]){
       const item=el('div','cod-rider-metric '+extra);
       item.append(el('span','',name),el('strong','',money(val)));
+      if(name==='Collected'){
+        const split=el('div','cod-collected-breakdown');
+        const cashLine=el('div','cod-collected-breakdown-line');
+        cashLine.append(el('span','', 'Cash'),el('b','',money(riderCashPaid)));
+        const onlineLine=el('div','cod-collected-breakdown-line');
+        onlineLine.append(el('span','', 'Online'),el('b','',money(riderOnlinePaid)));
+        split.append(cashLine,onlineLine);
+        item.append(split);
+      }
       metrics.append(item);
     }
     card.append(metrics);
