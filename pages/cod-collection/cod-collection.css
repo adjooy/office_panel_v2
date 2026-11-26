@@ -329,3 +329,54 @@ body.cod-locked #codTransferForm,body.cod-locked #codTransferHistory{pointer-eve
  .cod-rider-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
  .cod-rider-metric.cod-metric-due,.cod-rider-metric.cod-metric-over,.cod-rider-metric.cod-metric-ok{grid-column:auto}
 }
+
+/* Rider workspace: collection/actions on the left, rider-by-rider overview on the right. */
+.cod-workspace-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);
+  align-items:start;
+  gap:16px;
+  margin:18px 0 20px;
+}
+.cod-workspace-grid > .cod-section{min-width:0;margin:0}
+.cod-rider-sidebar{padding:18px}
+.cod-rider-sidebar .cod-rider-overview-wrap{margin:0}
+.cod-rider-sidebar .cod-rider-overview-title{margin-bottom:14px}
+.cod-rider-sidebar .cod-rider-overview-title h3{font-size:18px}
+.cod-rider-sidebar .cod-rider-overview{
+  grid-template-columns:minmax(0,1fr);
+  gap:9px;
+}
+.cod-rider-sidebar .cod-rider-overview-card{padding:12px}
+.cod-rider-sidebar .cod-rider-overview-values{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  row-gap:12px;
+  column-gap:10px;
+}
+.cod-rider-sidebar .cod-rider-overview-value b{font-size:16px}
+.cod-workspace-grid .cod-rider-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cod-workspace-grid .cod-rider .cod-entry-form{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+.cod-workspace-grid .cod-rider .cod-entry-form label:nth-child(3){grid-column:1/-1}
+.cod-workspace-grid .cod-rider .cod-entry-form button{grid-column:1/-1;width:100%}
+.cod-workspace-grid .cod-rider .cod-cash-add-form{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important
+}
+.cod-workspace-grid .cod-rider .cod-cash-add-form label:nth-child(3){grid-column:1/-1}
+@media(max-width:1080px){
+  .cod-workspace-grid{grid-template-columns:minmax(0,1fr)}
+  .cod-rider-sidebar .cod-rider-overview{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:750px){
+  .cod-rider-sidebar .cod-rider-overview{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:600px){
+  .cod-workspace-grid{gap:12px;margin:14px 0}
+  .cod-rider-sidebar{padding:12px}
+  .cod-rider-sidebar .cod-rider-overview-value b{font-size:14px}
+  .cod-workspace-grid .cod-rider .cod-entry-form,
+  .cod-workspace-grid .cod-rider .cod-cash-add-form{grid-template-columns:1fr!important}
+  .cod-workspace-grid .cod-rider .cod-entry-form label,
+  .cod-workspace-grid .cod-rider .cod-cash-add-form label{grid-column:1/-1}
+}
