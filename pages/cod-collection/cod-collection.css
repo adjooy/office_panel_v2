@@ -380,3 +380,19 @@ body.cod-locked #codTransferForm,body.cod-locked #codTransferHistory{pointer-eve
   .cod-workspace-grid .cod-rider .cod-entry-form label,
   .cod-workspace-grid .cod-rider .cod-cash-add-form label{grid-column:1/-1}
 }
+
+/* Online paid is a compact secondary figure inside Collected, not another card. */
+.cod-rider-online-paid{
+  display:block;
+  width:fit-content;
+  max-width:100%;
+  margin-top:7px;
+  padding:4px 7px;
+  border-radius:6px;
+  background:#eef3ff;
+  color:#3d59aa;
+  font-size:11px;
+  font-weight:750;
+  line-height:1.35;
+  overflow-wrap:anywhere;
+}
