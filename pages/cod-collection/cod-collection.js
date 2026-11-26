@@ -127,10 +127,37 @@ function validateDay(v){
     }
   }
 }
+
+const NOTE_VALUES=[1000,500,200,100,50,20,10,5,2];
+function noteTotal(notes){
+  if(!notes||typeof notes!=='object'||Array.isArray(notes))return null;
+  let total=0;
+  for(const [key,value] of Object.entries(notes)){
+    if(!NOTE_VALUES.includes(Number(key))||!Number.isSafeInteger(value)||value<0||value>100000)return null;
+    total+=Number(key)*value*100;
+  }
+  return Number.isSafeInteger(total)?total:null;
+}
+function readNotes(inputs){
+  const result={};
+  for(const input of inputs){
+    if(!/^\d*$/.test(input.value))return null;
+    const count=input.value===''?0:Number(input.value);
+    if(!Number.isSafeInteger(count)||count<0||count>100000)return null;
+    if(count)result[input.dataset.noteValue]=count;
+  }
+  return result;
+}
+function noteDescription(notes){
+  return NOTE_VALUES.filter(value=>notes?.[value]).map(value=>'৳'+value+' × '+notes[value]).join(' · ');
+}
+
 function validatePayment(p){
   if(!p||typeof p.id!=='string'||!Number.isSafeInteger(p.amount)||
     p.amount<=0||!methods.includes(p.method)||typeof p.reference!=='string'||p.reference.length>140)
     throw Error('Invalid payment record');
+  if(p.notes!==undefined && (p.method!=='Cash'||noteTotal(p.notes)!==p.amount))
+    throw Error('Cash note breakdown does not match payment amount');
 }
 function persist(){
   if(!ensureReady())return Promise.resolve(false);
@@ -319,7 +346,7 @@ function sums(r){const paid=r.payments.reduce((n,p)=>n+p.amount,0);return {paid,
 function el(tag,cls,content){const a=document.createElement(tag);if(cls)a.className=cls;if(content!==undefined)a.textContent=content;return a;}
 function button(label,fn,cls=''){const b=el('button','cod-action '+cls,label);b.type='button';b.addEventListener('click',fn);return b;}
 function field(label,value,handler,type='text'){const wrap=el('label');wrap.append(el('span','',label));const input=el('input');input.type=type;input.value=value;input.addEventListener('change',()=>handler(input.value,input));wrap.append(input);return wrap;}
-function addPaymentForm(container,callback){const f=el('form','cod-entry-form');const method=el('select');for(const m of methods){const o=el('option','',m);o.value=m;method.append(o);}const amount=el('input');amount.type='number';amount.min='.01';amount.step='.01';amount.placeholder='0.00';amount.required=true;const ref=el('input');ref.maxLength=140;ref.placeholder='Reference / note';for(const [label,input] of [['Method',method],['Amount (BDT)',amount],['Reference',ref]]){const wrap=el('label');wrap.append(el('span','',label),input);f.append(wrap);}const b=el('button','btn btn-primary','+ Add Payment');b.type='submit';f.append(b);f.addEventListener('submit',e=>{e.preventDefault();const v=parseMoney(amount.value);if(v===null||v<=0)return alert('Enter a valid positive amount (maximum two decimals).');callback({id:uid(),method:method.value,amount:v,reference:ref.value.trim().slice(0,140)});f.reset();});container.append(f);}
+function addPaymentForm(container,callback){const f=el('form','cod-entry-form');const method=el('select');for(const m of methods){const o=el('option','',m);o.value=m;method.append(o);}const amount=el('input');amount.type='number';amount.min='.01';amount.step='.01';amount.placeholder='0.00';amount.required=true;const ref=el('input');ref.maxLength=140;ref.placeholder='Reference / note';for(const [label,input] of [['Amount (BDT)',amount],['Type',method],['Reference',ref]]){const wrap=el('label');wrap.append(el('span','',label),input);f.append(wrap);}const b=el('button','btn btn-primary','+ Add Payment');b.type='submit';f.append(b);f.addEventListener('submit',e=>{e.preventDefault();const v=parseMoney(amount.value);if(v===null||v<=0)return alert('Enter a valid positive amount (maximum two decimals).');callback({id:uid(),method:method.value,amount:v,reference:ref.value.trim().slice(0,140)});f.reset();});container.append(f);}
 
 function renderCODCashAdditions(card,d,r){
   const outer=el('section','cod-cash-add-section');
@@ -411,6 +438,19 @@ function openEditPayment(kind,riderId,paymentId){
   method.value=entry.method;
   x('codEditAmount').value=centsToInput(entry.amount);
   x('codEditReference').value=entry.reference||'';
+  const noteEditor=x('codEditNoteCounter');
+  noteEditor.hidden=kind!=='agent'||entry.method!=='Cash';
+  noteEditor.open=kind==='agent'&&entry.method==='Cash'&&!!entry.notes;
+  const noteFields=x('codEditNoteFields');noteFields.replaceChildren();
+  if(kind==='agent'&&entry.method==='Cash'){
+    for(const value of NOTE_VALUES){
+      const label=el('label','', '৳'+value+' notes');
+      const input=el('input');input.type='number';input.min='0';input.step='1';input.inputMode='numeric';
+      input.dataset.noteValue=String(value);input.value=String(entry.notes?.[value]||'');
+      label.append(input);noteFields.append(label);
+    }
+  }
+  updateEditNoteTotal();
   x('codEditHeading').textContent=kind==='agent'?'Edit Agent Payment':'Edit Rider Payment';
   if(typeof editDialog.showModal==='function')editDialog.showModal();
   else editDialog.setAttribute('open','');
@@ -420,6 +460,16 @@ function closeEditPayment(){
   if(typeof editDialog.close==='function')editDialog.close();
   else editDialog.removeAttribute('open');
 }
+function updateEditNoteTotal(){
+  const inputs=[...x('codEditNoteFields').querySelectorAll('[data-note-value]')];
+  const notes=readNotes(inputs);
+  const total=notes===null?null:noteTotal(notes);
+  x('codEditNoteTotal').textContent=total===null?'Invalid note count':'Notes total: '+money(total);
+}
+x('codEditNoteFields').addEventListener('input',updateEditNoteTotal);
+x('codEditMethod').addEventListener('change',()=>{
+  x('codEditNoteCounter').hidden=!editingPayment||editingPayment.kind!=='agent'||x('codEditMethod').value!=='Cash';
+});
 x('codEditCancel').addEventListener('click',closeEditPayment);
 editDialog.addEventListener('cancel',()=>{editingPayment=null;});
 x('codEditForm').addEventListener('submit',e=>{
@@ -435,7 +485,19 @@ x('codEditForm').addEventListener('submit',e=>{
   const method=x('codEditMethod').value;
   if(!methods.includes(method))return alert('Select a valid payment method.');
   const reference=x('codEditReference').value.trim().slice(0,140);
+  const noteEditor=x('codEditNoteCounter');
+  let updatedNotes=undefined;
+  if(editingPayment.kind==='agent'&&method==='Cash'&&noteEditor.open){
+    const notes=readNotes([...x('codEditNoteFields').querySelectorAll('[data-note-value]')]);
+    if(notes===null)return alert('Enter whole-number note counts.');
+    const value=noteTotal(notes);
+    if(value===null)return alert('Invalid note counts.');
+    if(value>0&&value!==amount)return alert('Cash notes total must equal payment amount.');
+    if(value>0)updatedNotes=notes;
+  }
   entry.amount=amount;entry.method=method;entry.reference=reference;
+  if(updatedNotes)entry.notes=updatedNotes;
+  else delete entry.notes;
   persist();closeEditPayment();render();
 });
 
@@ -825,7 +887,25 @@ x('codAddRider').addEventListener('click',()=>{
   d.riders.push(dayRider({id,name}));selectedRiderId=id;
   persist();render();
 });
-x('agentForm').addEventListener('submit',e=>{e.preventDefault();const v=parseMoney(x('agentAmount').value);if(v===null||v<=0)return alert('Invalid agent payment amount.');current().agent.push({id:uid(),method:x('agentMethod').value,amount:v,reference:x('agentReference').value.trim().slice(0,140)});persist();x('agentForm').reset();render();});
+x('agentForm').addEventListener('submit',e=>{
+  e.preventDefault();if(!ensureReady())return;
+  const amount=parseMoney(x('agentAmount').value),method=x('agentMethod').value;
+  if(amount===null||amount<=0)return alert('Enter a valid agent payment amount.');
+  const entry={id:uid(),method,amount,reference:x('agentReference').value.trim().slice(0,140)};
+  const inputNotes=[...x('agentNoteCounter').querySelectorAll('[data-note-value]')];
+  if(method==='Cash'){
+    const notes=readNotes(inputNotes);
+    if(notes===null)return alert('Enter valid whole-number cash note counts.');
+    const counted=noteTotal(notes);
+    if(counted===null)return alert('Invalid note count.');
+    if(counted>0&&counted!==amount)return alert('Cash-note total does not match Amount. Correct it before saving.');
+    if(counted>0)entry.notes=notes;
+  }
+  current().agent.push(entry);
+  const saved=persist();
+  x('agentForm').reset();render();
+  saved.then(ok=>notice(ok?'Agent payment and note breakdown saved to Firebase.':'Agent payment save failed. Check cloud status.'));
+});
 function download(name,content,type){const b=new Blob([content],{type}),url=URL.createObjectURL(b),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 x('codExport').addEventListener('click',()=>{
   const headers=['Date','Type','Rider','Effective COD','Payment Method','Payment Amount','Due','Overpaid','Reference / Remarks','From Rider','To Rider'];
