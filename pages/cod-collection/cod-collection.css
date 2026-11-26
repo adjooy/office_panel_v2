@@ -396,3 +396,119 @@ body.cod-locked #codTransferForm,body.cod-locked #codTransferHistory{pointer-eve
   line-height:1.35;
   overflow-wrap:anywhere;
 }
+
+/* COD collection refresh: wide canvas, focused two-tab workflow and compact histories. */
+html,body{background:#f5f8fc}
+.page-content{
+  width:100%!important;
+  max-width:1900px!important;
+  margin-inline:auto;
+  padding:clamp(12px,1.55vw,26px) clamp(12px,1.55vw,28px) calc(72px + env(safe-area-inset-bottom,0px))!important;
+  box-sizing:border-box;
+}
+.cod-overview{margin:12px 0 14px}
+.cod-summary-simple{grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.cod-summary-simple .cod-stat{
+  min-height:98px;
+  padding:14px 14px 15px;
+  border-radius:13px;
+  box-shadow:0 2px 9px rgba(23,46,80,.04);
+}
+.cod-summary-simple .cod-stat small{min-height:0;margin-bottom:7px;font-size:11px}
+.cod-summary-simple .cod-stat strong{font-size:clamp(16px,1.7vw,23px)}
+.cod-reconcile-note{margin-top:8px}
+.cod-tab-nav{
+  position:sticky;top:0;z-index:20;
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;padding:6px;margin:15px 0;
+  border:1px solid #e0e7f3;border-radius:15px;
+  background:#edf2f9;
+  box-shadow:0 3px 15px rgba(20,45,90,.045);
+}
+.cod-tab{
+  min-width:0;display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:12px 16px;min-height:48px;border:0;border-radius:11px;
+  background:transparent;color:#66768e;
+  font:750 15px/1.25 system-ui,sans-serif;cursor:pointer;
+  transition:background .16s,color .16s,box-shadow .16s;
+}
+.cod-tab:hover{color:#264579;background:#e0e8f5}
+.cod-tab.is-active{background:#fff;color:#264cad;box-shadow:0 2px 10px rgba(34,65,115,.1)}
+.cod-tab:focus-visible{outline:3px solid #5c7cdb;outline-offset:2px}
+.cod-tab-icon{width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:7px;background:#dce7fa;color:#4968a4;font-size:15px}
+.cod-tab.is-active .cod-tab-icon{background:#e8eeff;color:#3058b9}
+#codRiderTabPanel[hidden],#codAgentTabPanel[hidden]{display:none!important}
+.cod-tab-panel{min-width:0}
+.cod-tab-panel .cod-section{background:#fff;border:1px solid #e2e8f2;box-shadow:0 3px 16px rgba(25,50,82,.035);border-radius:15px}
+.cod-workspace-grid{margin:0 0 18px;gap:14px;grid-template-columns:minmax(0,1.42fr) minmax(0,.95fr)}
+.cod-workspace-grid .cod-section{min-width:0;padding:clamp(13px,1.2vw,22px)}
+.cod-workspace-grid .cod-rider-overview-card{border-radius:11px}
+.cod-workspace-grid .cod-rider-overview-top{margin-bottom:10px}
+.cod-workspace-grid .cod-rider-overview-values{gap:8px 12px}
+.cod-workspace-grid .cod-rider-metrics{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.cod-workspace-grid .cod-rider-metric{padding:10px}
+.cod-workspace-grid .cod-rider-metric strong{font-size:15px}
+.cod-workspace-grid .cod-rider .cod-entry-form{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.cod-workspace-grid .cod-rider .cod-entry-form label:nth-child(3){grid-column:auto}
+.cod-workspace-grid .cod-rider .cod-entry-form button{grid-column:1/-1;width:auto;justify-self:start;min-width:175px}
+.cod-workspace-grid .cod-rider .cod-cash-add-form{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.cod-workspace-grid .cod-rider .cod-cash-add-form label:nth-child(3){grid-column:auto}
+.cod-history-details,.cod-rider-tools{
+  margin:13px 0 0;border:1px solid #dfe6f2;border-radius:11px;
+  background:#fbfcff;overflow:hidden;
+}
+.cod-history-details>summary,.cod-rider-tools>summary{
+  list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;
+  min-height:42px;padding:11px 13px;
+  color:#365078;font-size:13px;font-weight:750;user-select:none;
+}
+.cod-history-details>summary::-webkit-details-marker,.cod-rider-tools>summary::-webkit-details-marker{display:none}
+.cod-history-details>summary::after,.cod-rider-tools>summary::after{
+  content:"＋";font-size:20px;line-height:1;color:#6280ad;font-weight:500;
+}
+.cod-history-details[open]>summary::after,.cod-rider-tools[open]>summary::after{content:"−"}
+.cod-history-details[open]>summary,.cod-rider-tools[open]>summary{border-bottom:1px solid #e4e9f3;background:#f1f5fc}
+.cod-history-details .cod-table-scroll{margin:8px}
+.cod-history-details .cod-cash-history,.cod-history-details .cod-transfer-history{padding:10px}
+.cod-history-details .cod-empty{margin:4px}
+.cod-history-count{font-weight:600;color:#6b80a3;margin-right:auto;margin-left:6px}
+.cod-rider-tools{width:100%;margin-top:0}
+.cod-rider-tools .cod-rider-actions{padding:11px;gap:8px}
+.cod-rider-tools .cod-action{min-height:35px}
+.cod-rider-head{margin-bottom:8px}
+.cod-agent-overview{margin:0;padding:clamp(14px,1.7vw,26px);max-width:none}
+.cod-agent-overview-grid{max-width:850px}
+.cod-agent-form-title{margin-top:22px}
+.cod-agent-report-actions{margin-top:17px}
+.cod-agent-overview .cod-entry-form{max-width:1200px}
+.cod-agent-overview .cod-table-scroll{max-width:100%}
+@media(max-width:1550px){
+  .cod-summary-simple{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .cod-workspace-grid .cod-rider-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cod-workspace-grid .cod-rider .cod-entry-form{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cod-workspace-grid .cod-rider .cod-entry-form label:nth-child(3){grid-column:1/-1}
+  .cod-workspace-grid .cod-rider .cod-cash-add-form{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .cod-workspace-grid .cod-rider .cod-cash-add-form label:nth-child(3){grid-column:1/-1}
+}
+@media(max-width:1080px){
+  .cod-workspace-grid{grid-template-columns:minmax(0,1fr)}
+  .cod-rider-sidebar .cod-rider-overview{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cod-workspace-grid .cod-rider-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(max-width:750px){
+  .cod-rider-sidebar .cod-rider-overview{grid-template-columns:1fr}
+  .cod-workspace-grid .cod-rider-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cod-summary-simple{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:600px){
+  .page-content{padding:11px 10px calc(78px + env(safe-area-inset-bottom,0px))!important}
+  .cod-tab-nav{margin:11px 0;gap:5px;padding:5px;border-radius:12px}
+  .cod-tab{min-height:45px;padding:9px 6px;font-size:13px;gap:6px}
+  .cod-tab-icon{width:21px;height:21px}
+  .cod-workspace-grid{gap:11px}
+  .cod-workspace-grid .cod-rider .cod-entry-form,
+  .cod-workspace-grid .cod-rider .cod-cash-add-form{grid-template-columns:1fr!important}
+  .cod-workspace-grid .cod-rider .cod-entry-form label:nth-child(3),
+  .cod-workspace-grid .cod-rider .cod-cash-add-form label:nth-child(3){grid-column:1/-1}
+  .cod-workspace-grid .cod-rider .cod-entry-form button{justify-self:stretch}
+}
