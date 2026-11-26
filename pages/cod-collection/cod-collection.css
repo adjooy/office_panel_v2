@@ -512,3 +512,24 @@ html,body{background:#f5f8fc}
   .cod-workspace-grid .cod-rider .cod-cash-add-form label:nth-child(3){grid-column:1/-1}
   .cod-workspace-grid .cod-rider .cod-entry-form button{justify-self:stretch}
 }
+
+/* Agent tab uses the available width instead of leaving an empty right half. */
+.cod-agent-columns{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.95fr);gap:clamp(16px,2vw,30px);align-items:start}
+.cod-agent-main,.cod-agent-aside{min-width:0}
+.cod-agent-main .cod-agent-overview-grid{max-width:none}
+.cod-agent-main .cod-entry-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.cod-agent-main .cod-entry-form>label:nth-of-type(3){grid-column:1/-1}
+.cod-agent-main .cod-entry-form>button[type="submit"]{grid-column:1/-1;justify-self:start;min-width:190px}
+.cod-agent-aside{padding-left:clamp(16px,1.8vw,28px);border-left:1px solid #e1e8f3}
+.cod-agent-aside>.cod-subtitle{margin:2px 0 12px}
+.cod-agent-aside .cod-agent-report-actions{display:flex;align-items:stretch;flex-direction:column;gap:8px}
+.cod-agent-aside .cod-agent-report-actions button{width:100%}
+@media(max-width:1080px){
+  .cod-agent-columns{grid-template-columns:1fr;gap:20px}
+  .cod-agent-aside{border-left:0;border-top:1px solid #e1e8f3;padding:16px 0 0}
+}
+@media(max-width:600px){
+  .cod-agent-main .cod-entry-form{grid-template-columns:1fr}
+  .cod-agent-main .cod-entry-form>label:nth-of-type(3){grid-column:auto}
+  .cod-agent-main .cod-entry-form>button[type="submit"]{width:100%}
+}
