@@ -3,7 +3,7 @@
 <title>COD Collection · AD JOY PANEL</title>
 <link rel="stylesheet" href="../../assets/css/base.css">
 <link rel="stylesheet" href="../../assets/css/panel-theme.css">
-<link rel="stylesheet" href="cod-collection.css?v=20261126-repeat-reference-1">
+<link rel="stylesheet" href="cod-collection.css?v=20261126-original-cod-agent-jpg-1">
 </head><body class="cod-locked"><main class="page-content">
 <header class="page-head cod-page-header"><div><h1 class="page-title">COD Collection</h1>
 <p class="page-sub">Rider collection and payment-agent settlement · Firebase-synced daily ledger</p></div>
@@ -20,7 +20,7 @@
   </div>
   <div class="cod-reconcile-note" id="codReconcileNote"></div>
   <div class="cod-rider-overview-wrap">
-    <div class="cod-rider-overview-title"><div><h3>Rider-wise Collection</h3><p>Adjusted COD, collected amount and remaining due for every rider</p></div></div>
+    <div class="cod-rider-overview-title"><div><h3>Rider-wise Collection</h3><p>Original COD from Hive entries, after-transfer collection, paid and due</p></div></div>
     <div id="codRiderOverview" class="cod-rider-overview" aria-live="polite"></div>
   </div>
 </section>
@@ -35,7 +35,7 @@
   <div id="codRiders" class="cod-riders"></div>
   <div id="codTransferParking" hidden><section id="codTransferPanel" class="cod-inline-transfer" aria-labelledby="codTransferHeading">
   <div class="cod-section-head"><div><h3 id="codTransferHeading">Transfer COD to Another Rider</h3>
-  <span>Transfer from the selected rider; total COD remains the same.</span></div></div>
+  <span>Only collection responsibility moves. Original/Hive COD and total COD stay unchanged.</span></div></div>
   <form id="codTransferForm" class="cod-transfer-form">
     <label class="cod-transfer-source-hidden">From Rider<select id="codTransferFrom" required></select></label>
     <label>To Rider<select id="codTransferTo" required></select></label>
@@ -46,7 +46,7 @@
       <button class="btn btn-light" id="codTransferCancel" type="button" hidden>Cancel Edit</button>
     </div>
   </form>
-  <p class="cod-transfer-hint">The amount is deducted from the source rider and added to the destination. Enter a unique parcel CID/reference to stop accidental repeated transfers.</p>
+  <p class="cod-transfer-hint">This moves the amount to the receiving rider for collection. Both riders keep their original Hive COD figures. You may reuse a CID/reference.</p>
   <h4 class="cod-subtitle">Transfer History for Selected Rider</h4>
   <div id="codTransferHistory" class="cod-transfer-history"></div>
 </section>
@@ -121,7 +121,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="cod-collection.js?v=20261126-repeat-reference-1"></script><script>
+<script src="cod-collection.js?v=20261126-original-cod-agent-jpg-1"></script><script>
 (() => {
   const form = document.getElementById('agentForm');
   const method = document.getElementById('agentMethod');
