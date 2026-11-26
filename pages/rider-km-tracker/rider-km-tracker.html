@@ -1398,7 +1398,12 @@ const Entries = (() => {
       document.getElementById('entryPaid').value = e.paid;
       document.getElementById('entryNote').value = e.note || '';
       preview();
-      window.scrollTo({ top:0, behavior:'smooth' });
+      // Scroll to the actual entry editor, not the overview at page top.
+      // Run on the next frame so the owner PIN overlay can close first.
+      requestAnimationFrame(() => {
+        const editCard = document.getElementById('entryTitle').closest('.card');
+        if(editCard) editCard.scrollIntoView({ behavior:'smooth', block:'start' });
+      });
     }, 'Enter PIN to edit this entry.');
   }
 
