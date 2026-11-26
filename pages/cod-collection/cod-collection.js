@@ -670,6 +670,7 @@ function render(){
     const adjusted=effectiveCOD(d,rider.id);
     const movement=transferAmounts(d,rider.id);
     const paid=sums(rider).paid;
+    const onlinePaid=rider.payments.reduce((n,p)=>n+(p.method==='Cash'?0:p.amount),0);
     const difference=adjusted-paid;
     const status=difference>0?'Pending':difference<0?'Overpaid':'Paid';
     const statusAmount=Math.abs(difference);
@@ -688,7 +689,11 @@ function render(){
       [difference>0?'Pending':difference<0?'Overpaid':'Remaining',statusAmount,difference>0?'is-pending':difference<0?'is-overpaid':'is-paid']
     ]){
       const group=el('div','cod-rider-overview-value '+cls);
-      group.append(el('small','',label),el('b','',money(value)));metrics.append(group);
+      group.append(el('small','',label),el('b','',money(value)));
+      if(label==='Collected'){
+        group.append(el('span','cod-rider-online-paid','Online Paid: '+money(onlinePaid)));
+      }
+      metrics.append(group);
     }
     card.append(top,metrics);
     if(movement.incoming||movement.outgoing){
