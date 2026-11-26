@@ -71,6 +71,8 @@
 <section id="codAgentTabPanel" class="cod-tab-panel" role="tabpanel" aria-labelledby="codAgentTab" hidden>
 <section class="card cod-section cod-agent-overview" aria-labelledby="codAgentOverviewTitle">
 <div class="cod-section-head"><div><h2 id="codAgentOverviewTitle">Payment Agent</h2><span>Agent settlement and payments</span></div></div>
+<div class="cod-agent-columns">
+  <div class="cod-agent-main">
 <div class="cod-agent-overview-grid cod-agent-overview-simple" aria-live="polite">
     <div class="cod-agent-overview-item"><small>Paid to Agent</small><strong id="agentPaid">৳0.00</strong></div>
     <div class="cod-agent-overview-item cod-agent-overview-difference"><small>Difference from COD</small><strong id="agentBalance">৳0.00</strong></div>
@@ -101,6 +103,9 @@
   <button id="agentUseNoteTotal" class="btn btn-light" type="button" disabled>Use total as amount</button>
 </details>
 <button class="btn btn-primary" type="submit">+ Add Agent Payment</button></form>
+  </div>
+  <div class="cod-agent-aside">
+    <h3 class="cod-subtitle">History &amp; Report</h3>
 <details id="codAgentHistoryDetails" class="cod-history-details">
   <summary>Agent Payment History <span class="cod-history-count" id="codAgentHistoryCount"></span></summary>
   <div class="cod-table-scroll"><table class="cod-table"><thead><tr><th>Method</th><th>Amount</th><th>Reference</th><th>Action</th></tr></thead><tbody id="agentRows"></tbody></table></div>
@@ -110,6 +115,8 @@
   <span>Cash-note breakdown and agent payment summary for this work date</span>
 </div>
 <p class="cod-foot" id="agentReconcile" hidden></p>
+  </div>
+</div>
 </section>
 </section>
 <section class="card cod-section cod-data-tools" aria-labelledby="codDataHeading">
