@@ -313,19 +313,25 @@ fbAuth.onAuthStateChanged(async user=>{
 });
 /* COD transfers are offsets, never new COD: incoming - outgoing = zero globally. */
 function transfersOf(day){return Array.isArray(day.transfers)?day.transfers:[];}
-function effectiveCOD(day,riderId,excludingId=null){
+function originalCOD(day,riderId){
   const rider=day.riders.find(r=>r.id===riderId);
   if(!rider)return 0;
-  let net=rider.cod+dayAdditions(day).filter(a=>a.riderId===riderId).reduce((n,a)=>n+a.amount,0);
+  return rider.cod+dayAdditions(day).filter(a=>a.riderId===riderId).reduce((n,a)=>n+a.amount,0);
+}
+function transferAmounts(day,riderId,excludingId=null){
+  let incoming=0,outgoing=0;
   for(const t of transfersOf(day)){
     if(t.id===excludingId)continue;
-    if(t.fromId===riderId)net-=t.amount;
-    if(t.toId===riderId)net+=t.amount;
+    if(t.toId===riderId)incoming+=t.amount;
+    if(t.fromId===riderId)outgoing+=t.amount;
   }
-  return net;
+  return {incoming,outgoing,net:incoming-outgoing};
+}
+function effectiveCOD(day,riderId,excludingId=null){
+  return originalCOD(day,riderId)+transferAmounts(day,riderId,excludingId).net;
 }
 function transferStatus(day){
-  const base=day.riders.reduce((n,r)=>n+r.cod,0)+dayAdditions(day).reduce((n,a)=>n+a.amount,0);
+  const base=day.riders.reduce((n,r)=>n+originalCOD(day,r.id),0);
   const effective=day.riders.reduce((n,r)=>n+effectiveCOD(day,r.id),0);
   return {base,effective};
 }
@@ -653,13 +659,16 @@ function render(){
       else online+=p.amount;
     }
   }
-  // Rider overview uses effective (transfer-adjusted) COD to avoid counting
-  // transferred parcels twice. Figures always reflect the work date selected.
+  // Show original manually-entered Hive COD and adjusted responsibility separately.
+  // Transfers never modify the original COD; they only move collection duties.
+  // Figures reflect the selected work date, not live Hive data.
   const overview=x('codRiderOverview');
   overview.replaceChildren();
   if(!d.riders.length)overview.append(el('p','cod-empty','No riders for this date.'));
   for(const rider of d.riders){
+    const original=originalCOD(d,rider.id);
     const adjusted=effectiveCOD(d,rider.id);
+    const movement=transferAmounts(d,rider.id);
     const paid=sums(rider).paid;
     const difference=adjusted-paid;
     const status=difference>0?'Pending':difference<0?'Overpaid':'Paid';
@@ -673,7 +682,8 @@ function render(){
       el('span','cod-rider-overview-status '+(difference>0?'is-pending':difference<0?'is-overpaid':'is-paid'),status));
     const metrics=el('div','cod-rider-overview-values');
     for(const [label,value,cls] of [
-      ['Adjusted COD',adjusted,''],
+      ['Original COD',original,'cod-overview-original'],
+      ['After Transfer',adjusted,''],
       ['Collected',paid,''],
       [difference>0?'Pending':difference<0?'Overpaid':'Remaining',statusAmount,difference>0?'is-pending':difference<0?'is-overpaid':'is-paid']
     ]){
@@ -681,6 +691,12 @@ function render(){
       group.append(el('small','',label),el('b','',money(value)));metrics.append(group);
     }
     card.append(top,metrics);
+    if(movement.incoming||movement.outgoing){
+      const parts=[];
+      if(movement.outgoing)parts.push('Sent to other riders: '+money(movement.outgoing));
+      if(movement.incoming)parts.push('Received from other riders: '+money(movement.incoming));
+      card.append(el('small','cod-transfer-effect',parts.join(' · ')));
+    }
     const choose=()=>{
       if(editingTransferId)resetTransferEditor();
       selectedRiderId=rider.id;render();
@@ -733,9 +749,8 @@ function render(){
     }catch(err){}
 
     const {paid}=sums(r);
+    const riderOriginal=originalCOD(d,r.id),riderMovement=transferAmounts(d,r.id);
     const riderCOD=effectiveCOD(d,r.id),diff=riderCOD-paid;
-    const paidCash=r.payments.filter(p=>p.method==='Cash').reduce((n,p)=>n+p.amount,0);
-    const paidOnline=paid-paidCash;
     const status=diff>0?'Due '+money(diff):diff<0?'Overpaid '+money(-diff):'Fully settled';
     x('codRiderStatus').textContent=status;
     x('codRiderStatus').className='cod-pill '+(diff>0?'cod-pill-due':diff<0?'cod-pill-over':'cod-pill-ok');
@@ -776,7 +791,8 @@ function render(){
 
     const metrics=el('div','cod-rider-metrics');
     for(const [name,val,extra] of [
-      ['Assigned COD',riderCOD,'cod-metric-adjusted'],
+      ['Original COD (Hive)',riderOriginal,'cod-metric-original'],
+      ['After Transfer',riderCOD,'cod-metric-adjusted'],
       ['Collected',paid,''],
       [diff>0?'DUE':diff<0?'OVERPAID':'SETTLED',Math.abs(diff),diff>0?'cod-metric-due':diff<0?'cod-metric-over':'cod-metric-ok']
     ]){
@@ -785,6 +801,12 @@ function render(){
       metrics.append(item);
     }
     card.append(metrics);
+    if(riderMovement.incoming||riderMovement.outgoing){
+      const parts=[];
+      if(riderMovement.outgoing)parts.push('Sent: '+money(riderMovement.outgoing));
+      if(riderMovement.incoming)parts.push('Received: '+money(riderMovement.incoming));
+      card.append(el('p','cod-transfer-effect','Transfer record — '+parts.join(' · ')+'. Original COD stays unchanged.'));
+    }
     if(r.sent)card.append(el('small','cod-memo',
       'This rider/date already has a COD Due transfer to KM Tracker. Changes here do not adjust that deduction automatically.'));
 
@@ -923,6 +945,10 @@ function generateAgentReportJpg(){
   const cash=entries.filter(p=>p.method==='Cash');
   const online=entries.filter(p=>p.method!=='Cash');
   const sum=list=>list.reduce((n,p)=>n+p.amount,0);
+  const paidToAgent=sum(entries);
+  const panelCOD=transferStatus(day).base; // Total COD before rider-to-rider transfers
+  const settlementDifference=paidToAgent-panelCOD;
+  const settlementStatus=settlementDifference>0?'AGENT OVERPAID':settlementDifference<0?'AGENT DUE':'SETTLED';
   const counted={};
   for(const denomination of NOTE_VALUES)counted[denomination]=0;
   let notCounted=0;
@@ -930,7 +956,7 @@ function generateAgentReportJpg(){
     if(p.notes){for(const denom of NOTE_VALUES)counted[denom]+=p.notes[denom]||0;}
     else notCounted+=p.amount;
   }
-  const width=1200,height=1540;
+  const width=1200,height=1760;
   const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
   const g=canvas.getContext('2d');
   if(!g)return alert('JPG report unavailable in this browser.');
@@ -944,21 +970,31 @@ function generateAgentReportJpg(){
     g.fillText(String(value),x,y);
   };
   const m=value=>'BDT '+(value/100).toLocaleString('en-BD',{minimumFractionDigits:2,maximumFractionDigits:2});
-  rounded(48,42,1104,1456,22,'#ffffff');
+  rounded(48,42,1104,1676,22,'#ffffff');
   rounded(48,42,1104,128,22,'#17386a');g.fillStyle='#17386a';g.fillRect(48,115,1104,55);
   label('AGENT CASH HANDOVER REPORT',86,108,36,true,'#ffffff');
   label('AD JOY PANEL  |  Work Date: '+today(),86,149,21,false,'#e2eaff');
   label('Payment Summary',85,230,30,true);
   rounded(85,260,1030,142,14,'#eef4ff');
   label('Total to Agent',112,313,22,false);
-  label(m(sum(entries)),112,366,38,true,'#1b3d77');
+  label(m(paidToAgent),112,366,38,true,'#1b3d77');
   label('Cash: '+m(sum(cash)),720,315,22,true);
   label('Online / Other: '+m(sum(online)),720,359,21,false);
-  label('Cash Note Denominations',85,466,30,true);
-  label('Denomination',114,515,20,true,'#5a6e8c');
-  label('Quantity',665,515,20,true,'#5a6e8c');
-  label('Amount',1080,515,20,true,'#5a6e8c','right');
-  let y=540,totalCount=0,countedCash=0;
+  // Agent Due / Overpaid is calculated against TOTAL COD, not rider collections
+  // and not only physical cash. Mirrors the Payment Agent panel.
+  rounded(85,425,1030,153,14,'#edf3fc');
+  label('Agent Settlement vs Total COD',112,464,25,true,'#243e6a');
+  label('Total Panel COD',112,508,20,false,'#5a6e8c');
+  label(m(panelCOD),112,550,29,true,'#1b3d77');
+  label(settlementStatus,650,508,21,true,
+    settlementDifference>0?'#ae293d':settlementDifference<0?'#986116':'#177849');
+  label(m(Math.abs(settlementDifference)),650,550,30,true,
+    settlementDifference>0?'#ae293d':settlementDifference<0?'#986116':'#177849');
+  label('Cash Note Denominations',85,631,30,true);
+  label('Denomination',114,677,20,true,'#5a6e8c');
+  label('Quantity',665,677,20,true,'#5a6e8c');
+  label('Amount',1080,677,20,true,'#5a6e8c','right');
+  let y=694,totalCount=0,countedCash=0;
   for(const denomination of NOTE_VALUES){
     const qty=counted[denomination]||0;
     totalCount+=qty;countedCash+=denomination*qty*100;
@@ -968,26 +1004,26 @@ function generateAgentReportJpg(){
     label(m(denomination*qty*100),1080,y+36,22,true,'#263654','right');
     y+=57;
   }
-  rounded(90,1064,1008,75,12,'#e8f6ed');
-  label('Total notes: '+totalCount,114,1110,24,true,'#176846');
-  label(m(countedCash),1080,1110,28,true,'#176846','right');
+  rounded(90,1224,1008,75,12,'#e8f6ed');
+  label('Total notes: '+totalCount,114,1271,24,true,'#176846');
+  label(m(countedCash),1080,1271,28,true,'#176846','right');
   if(notCounted){
-    rounded(90,1153,1008,70,10,'#fff4e6');
-    label('Cash without saved note counts',114,1195,21,true,'#8b5a17');
-    label(m(notCounted),1080,1195,23,true,'#8b5a17','right');
+    rounded(90,1317,1008,70,10,'#fff4e6');
+    label('Cash without saved note counts',114,1360,21,true,'#8b5a17');
+    label(m(notCounted),1080,1360,23,true,'#8b5a17','right');
   }else{
-    label('All saved cash payments have recorded note counts.',104,1200,20,false,'#5c708d');
+    label('All saved cash payments have recorded note counts.',104,1360,20,false,'#5c708d');
   }
-  label('Other Payment Methods',85,1271,26,true);
+  label('Other Payment Methods',85,1426,26,true);
   const byMethod=new Map();
   for(const p of online)byMethod.set(p.method,(byMethod.get(p.method)||0)+p.amount);
   const otherText=byMethod.size?[...byMethod].map(([key,value])=>key+': '+m(value)).join('   |   '):'None';
   // Wrap long method lines on narrow report space.
   const segments=otherText.match(/.{1,74}(?:\s|$)|.{1,74}/g)||[otherText];
-  segments.slice(0,3).forEach((part,i)=>label(part.trim(),104,1314+i*30,19,false,'#3c526f'));
-  g.strokeStyle='#d7e1ef';g.lineWidth=2;g.beginPath();g.moveTo(85,1406);g.lineTo(1114,1406);g.stroke();
-  label('Prepared for agent handover',85,1452,20,false,'#64748b');
-  label('Report generated from saved COD Collection entries',1114,1452,17,false,'#64748b','right');
+  segments.slice(0,3).forEach((part,i)=>label(part.trim(),104,1468+i*30,19,false,'#3c526f'));
+  g.strokeStyle='#d7e1ef';g.lineWidth=2;g.beginPath();g.moveTo(85,1624);g.lineTo(1114,1624);g.stroke();
+  label('Prepared for agent handover',85,1672,20,false,'#64748b');
+  label('Report generated from saved COD Collection entries',1114,1672,17,false,'#64748b','right');
   canvas.toBlob(blob=>{
     if(!blob){alert('Could not generate JPG.');return;}
     const url=URL.createObjectURL(blob),anchor=document.createElement('a');
