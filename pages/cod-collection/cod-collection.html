@@ -3,13 +3,13 @@
 <title>COD Collection · AD JOY PANEL</title>
 <link rel="stylesheet" href="../../assets/css/base.css">
 <link rel="stylesheet" href="../../assets/css/panel-theme.css">
-<link rel="stylesheet" href="cod-collection.css?v=20261126-rider-online-paid-1">
+<link rel="stylesheet" href="cod-collection.css?v=20261126-clean-tabs-wide-1">
 </head><body class="cod-locked"><main class="page-content">
 <header class="page-head cod-page-header"><div><h1 class="page-title">COD Collection</h1>
 <p class="page-sub">Rider collection and payment-agent settlement · Firebase-synced daily ledger</p></div>
 <div class="cod-date-box"><label for="codDate">Work Date</label><div class="cod-date-nav"><button type="button" id="codPrevDate" class="cod-date-arrow" aria-label="Previous work date" title="Previous day">‹</button><input id="codDate" type="date"><button type="button" id="codNextDate" class="cod-date-arrow" aria-label="Next work date" title="Next day">›</button></div></div></header>
 <section class="cod-overview" aria-label="Daily COD summary">
-  <div class="cod-overview-heading"><div><h2>Today's Collection Overview</h2><p>Figures reflect the selected work date, not live company data.</p></div><span id="codRiderCount" class="cod-pill">0 riders</span></div>
+  <div class="cod-overview-heading"><div><h2>Today's Collection Overview</h2><p>Selected work date · amounts entered in this panel</p></div><span id="codRiderCount" class="cod-pill">0 riders</span></div>
   <div class="cod-summary cod-summary-simple" aria-live="polite">
     <div class="card cod-stat cod-stat-total"><small>Total COD</small><strong id="codTotal">৳0.00</strong></div>
     <div class="card cod-stat cod-stat-collected"><small>Total Collected</small><strong id="codCollected">৳0.00</strong></div>
@@ -20,6 +20,15 @@
   </div>
   <div class="cod-reconcile-note" id="codReconcileNote"></div>
 </section>
+<nav class="cod-tab-nav" role="tablist" aria-label="COD workspace">
+  <button type="button" class="cod-tab is-active" role="tab" id="codRiderTab" aria-controls="codRiderTabPanel" aria-selected="true" tabindex="0">
+    <span class="cod-tab-icon" aria-hidden="true">◉</span><span>Rider Collection</span>
+  </button>
+  <button type="button" class="cod-tab" role="tab" id="codAgentTab" aria-controls="codAgentTabPanel" aria-selected="false" tabindex="-1">
+    <span class="cod-tab-icon" aria-hidden="true">৳</span><span>Agent Payment</span>
+  </button>
+</nav>
+<section id="codRiderTabPanel" class="cod-tab-panel" role="tabpanel" aria-labelledby="codRiderTab">
 <div class="cod-workspace-grid">
 <section class="card cod-section cod-rider-section">
   <div class="cod-section-head"><div><h2>Rider Collection</h2><span>Choose a rider to view and update only their ledger</span></div></div>
@@ -44,8 +53,10 @@
     </div>
   </form>
   <p class="cod-transfer-hint">This moves the amount to the receiving rider for collection. Both riders keep their original Hive COD figures. You may reuse a CID/reference.</p>
-  <h4 class="cod-subtitle">Transfer History for Selected Rider</h4>
+  <details id="codTransferHistoryDetails" class="cod-history-details">
+  <summary>Transfer History <span class="cod-history-count" id="codTransferHistoryCount"></span></summary>
   <div id="codTransferHistory" class="cod-transfer-history"></div>
+</details>
 </section>
 </div>
 </section>
@@ -56,6 +67,8 @@
   </div>
 </aside>
 </div>
+</section>
+<section id="codAgentTabPanel" class="cod-tab-panel" role="tabpanel" aria-labelledby="codAgentTab" hidden>
 <section class="card cod-section cod-agent-overview" aria-labelledby="codAgentOverviewTitle">
 <div class="cod-section-head"><div><h2 id="codAgentOverviewTitle">Payment Agent</h2><span>Agent settlement and payments</span></div></div>
 <div class="cod-agent-overview-grid cod-agent-overview-simple" aria-live="polite">
@@ -88,12 +101,16 @@
   <button id="agentUseNoteTotal" class="btn btn-light" type="button" disabled>Use total as amount</button>
 </details>
 <button class="btn btn-primary" type="submit">+ Add Agent Payment</button></form>
-<div class="cod-table-scroll"><table class="cod-table"><thead><tr><th>Method</th><th>Amount</th><th>Reference</th><th>Action</th></tr></thead><tbody id="agentRows"></tbody></table></div>
+<details id="codAgentHistoryDetails" class="cod-history-details">
+  <summary>Agent Payment History <span class="cod-history-count" id="codAgentHistoryCount"></span></summary>
+  <div class="cod-table-scroll"><table class="cod-table"><thead><tr><th>Method</th><th>Amount</th><th>Reference</th><th>Action</th></tr></thead><tbody id="agentRows"></tbody></table></div>
+</details>
 <div class="cod-agent-report-actions">
   <button type="button" id="codAgentJpg" class="btn btn-primary">Generate Agent Report (JPG)</button>
   <span>Cash-note breakdown and agent payment summary for this work date</span>
 </div>
 <p class="cod-foot" id="agentReconcile" hidden></p>
+</section>
 </section>
 <section class="card cod-section cod-data-tools" aria-labelledby="codDataHeading">
 <div class="cod-section-head"><div><h2 id="codDataHeading">Export &amp; Backup</h2>
@@ -125,7 +142,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="cod-collection.js?v=20261126-rider-online-paid-1"></script><script>
+<script src="cod-collection.js?v=20261126-clean-tabs-wide-1"></script><script>
 (() => {
   const form = document.getElementById('agentForm');
   const method = document.getElementById('agentMethod');
