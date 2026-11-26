@@ -296,3 +296,23 @@ body.cod-locked #codTransferForm,body.cod-locked #codTransferHistory{pointer-eve
 .cod-date-arrow:hover{background:#dfe9ff;border-color:#a8bff0}
 .cod-date-arrow:focus-visible{outline:2px solid #5b75d8;outline-offset:2px}
 @media(max-width:600px){.cod-date-nav{gap:8px}.cod-date-arrow{flex-basis:45px;width:45px;height:46px}.cod-date-nav input[type="date"]{min-height:46px}}
+
+/* Compact daily overview, separated online payment, bottom maintenance tools. */
+.cod-summary-simple{grid-template-columns:repeat(3,minmax(0,1fr))}
+.cod-summary-simple .cod-stat{min-width:0}
+.cod-bottom-utilities{margin:22px 0 8px}
+.cod-bottom-utilities .cod-quick-actions{margin-bottom:8px}
+.cod-bottom-utilities .cod-notice{margin-bottom:0}
+.cod-agent-report-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:15px;padding-top:15px;border-top:1px solid #e4eaf4}
+.cod-agent-report-actions button{min-height:44px}
+.cod-agent-report-actions span{color:#65748c;font-size:12px;line-height:1.5}
+.cod-agent-note-breakdown,.cod-agent-note-unknown{display:block;margin-top:5px;font-size:11px;line-height:1.6;color:#44689f;white-space:normal;max-width:350px}
+.cod-agent-note-unknown{color:#936c3b}
+.cod-note-edit-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0}
+.cod-note-edit-grid label{min-width:0}
+.cod-note-edit-grid input{min-width:0;width:100%}
+#codEditNoteCounter{border:1px solid #dce5f3;border-radius:11px;padding:10px;background:#f8faff}
+#codEditNoteCounter summary{font-weight:700;font-size:13px;cursor:pointer}
+#codEditNoteCounter[hidden]{display:none!important}
+@media(max-width:780px){.cod-summary-simple{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:500px){.cod-note-edit-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.cod-agent-report-actions button{width:100%}.cod-summary-simple .cod-stat strong{font-size:clamp(18px,5vw,25px)}}
