@@ -65,6 +65,8 @@
 <form id="agentForm" class="cod-entry-form">
 <label>Amount (BDT)<input id="agentAmount" type="number" min="0.01" step="0.01" required placeholder="0.00"></label>
 <label>Method<select id="agentMethod"><option>Cash</option><option>bKash</option><option>Nagad</option><option>Rocket</option><option>Bank Transfer</option><option>Other</option></select></label>
+
+<label>Transaction / Reference<input id="agentReference" maxlength="140" placeholder="Optional for cash"></label>
 <details id="agentNoteCounter" style="grid-column:1/-1">
   <summary>Count cash notes</summary>
   <div class="cod-entry-form">
@@ -81,7 +83,6 @@
   <p><output id="agentNoteTotal" aria-live="polite">Total: ৳0</output></p>
   <button id="agentUseNoteTotal" class="btn btn-light" type="button" disabled>Use total as amount</button>
 </details>
-<label>Transaction / Reference<input id="agentReference" maxlength="140" placeholder="Optional for cash"></label>
 <button class="btn btn-primary" type="submit">+ Add Agent Payment</button></form>
 <div class="cod-table-scroll"><table class="cod-table"><thead><tr><th>Method</th><th>Amount</th><th>Reference</th><th>Action</th></tr></thead><tbody id="agentRows"></tbody></table></div>
 <div class="cod-agent-report-actions">
@@ -109,8 +110,8 @@
 <dialog id="codEditDialog" class="cod-edit-dialog">
 <form id="codEditForm" class="cod-edit-form">
   <h2 id="codEditHeading">Edit Payment</h2>
-  <label>Payment Method<select id="codEditMethod"></select></label>
   <label>Amount (BDT)<input id="codEditAmount" inputmode="decimal" type="number" min="0.01" step="0.01" required></label>
+  <label>Payment Method<select id="codEditMethod"></select></label>
 <details id="codEditNoteCounter" hidden><summary>Edit cash-note breakdown</summary><div id="codEditNoteFields" class="cod-note-edit-grid"></div><p id="codEditNoteTotal"></p></details>
   <label>Transaction / Reference<input id="codEditReference" maxlength="140" type="text"></label>
   <div class="cod-dialog-actions"><button type="button" id="codEditCancel" class="btn btn-light">Cancel</button><button class="btn btn-primary" type="submit">Save Changes</button></div>
