@@ -107,6 +107,7 @@ function validateDay(v){
     const ids=new Set();
     for(const a of v.codAdditions){
       if(!a||typeof a.id!=='string'||ids.has(a.id)||!riders.has(a.riderId)||
+         (a.type!==undefined && !['Cash','Online'].includes(a.type))||
          !Number.isSafeInteger(a.amount)||a.amount<=0||typeof a.reference!=='string'||a.reference.length>140)
         throw Error('Invalid Panel COD cash addition');
       ids.add(a.id);
@@ -395,16 +396,20 @@ function renderCODCashAdditions(card,d,r){
         if(newAmount===null)return;
         const amount=parseMoney(newAmount);
         if(amount===null||amount<=0)return alert('Invalid positive amount.');
+        const newType=prompt('Type: Cash or Online',entry.type||'Cash');
+        if(newType===null)return;
+        const type=newType.trim().toLowerCase()==='cash'?'Cash':newType.trim().toLowerCase()==='online'?'Online':null;
+        if(!type)return alert('Type must be Cash or Online.');
         const reference=prompt('Edit CID / Reference',entry.reference);
         if(reference===null)return;
         const cleaned=reference.trim().slice(0,140);
         if(!cleaned)return alert('CID / reference required.');
         if(dayAdditions(d).some(a=>a.id!==entry.id&&normalizedName(a.reference)===normalizedName(cleaned)))
           return alert('Duplicate CID/reference.');
-        const oldAmount=entry.amount,oldRef=entry.reference;
-        entry.amount=amount;entry.reference=cleaned;
+        const oldAmount=entry.amount,oldRef=entry.reference,oldType=entry.type;
+        entry.amount=amount;entry.reference=cleaned;entry.type=type;
         if(d.riders.some(person=>effectiveCOD(d,person.id)<0)){
-          entry.amount=oldAmount;entry.reference=oldRef;
+          entry.amount=oldAmount;entry.reference=oldRef;entry.type=oldType;
           return alert('Cannot reduce cash COD: linked transfers exceed remaining assigned COD.');
         }
         persist();render();notice('Panel COD cash entry updated.');
