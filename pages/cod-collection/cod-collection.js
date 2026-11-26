@@ -117,14 +117,13 @@ function validateDay(v){
   for(const p of v.agent)validatePayment(p);
   if(v.transfers!==undefined){
     if(!Array.isArray(v.transfers)||v.transfers.length>3000)throw Error('Invalid COD transfers');
-    const refs=new Set(),ids=new Set();
+    const ids=new Set();
     for(const t of v.transfers){
       if(!t||typeof t.id!=='string'||ids.has(t.id)||
         !riders.has(t.fromId)||!riders.has(t.toId)||t.fromId===t.toId||
         !Number.isSafeInteger(t.amount)||t.amount<=0||
-        typeof t.reference!=='string'||!t.reference.trim()||t.reference.length>120||
-        refs.has(t.reference.trim().toUpperCase()))throw Error('Invalid/duplicate COD transfer');
-      refs.add(t.reference.trim().toUpperCase());ids.add(t.id);
+        typeof t.reference!=='string'||!t.reference.trim()||t.reference.length>120)throw Error('Invalid COD transfer');
+      ids.add(t.id);
     }
   }
 }
@@ -336,9 +335,6 @@ function safeTransfer(day,t,excludingId=null){
     return 'Choose two different riders.';
   if(!Number.isSafeInteger(t.amount)||t.amount<=0)return 'Enter a valid transfer amount.';
   if(!t.reference||!t.reference.trim())return 'Parcel CID / unique reference is required.';
-  if(transfersOf(day).some(other=>other.id!==excludingId &&
-      other.reference.trim().toUpperCase()===t.reference.trim().toUpperCase()))
-    return 'This parcel CID / reference has already been transferred today.';
   if(effectiveCOD(day,t.fromId,excludingId)<t.amount)
     return 'Transfer exceeds available COD of the source rider.';
   return null;
@@ -368,8 +364,6 @@ function renderCODCashAdditions(card,d,r){
     const amount=parseMoney(amt.value),reference=ref.value.trim().slice(0,140);
     if(amount===null||amount<=0)return alert('Enter a valid positive cash COD amount.');
     if(!reference)return alert('Enter CID or unique reference.');
-    if(dayAdditions(d).some(a=>normalizedName(a.reference)===normalizedName(reference)))
-      return alert('This CID/reference was already added to Panel COD for this date.');
     d.codAdditions=dayAdditions(d).concat({id:uid(),riderId:r.id,amount,type:category.value,reference});
     persist();render();notice('Added '+money(amount)+' to '+r.name+' Panel COD. Total COD and Due updated.');
   });
@@ -404,8 +398,6 @@ function renderCODCashAdditions(card,d,r){
         if(reference===null)return;
         const cleaned=reference.trim().slice(0,140);
         if(!cleaned)return alert('CID / reference required.');
-        if(dayAdditions(d).some(a=>a.id!==entry.id&&normalizedName(a.reference)===normalizedName(cleaned)))
-          return alert('Duplicate CID/reference.');
         const oldAmount=entry.amount,oldRef=entry.reference,oldType=entry.type;
         entry.amount=amount;entry.reference=cleaned;entry.type=type;
         if(d.riders.some(person=>effectiveCOD(d,person.id)<0)){
