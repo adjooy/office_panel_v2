@@ -3,7 +3,7 @@
 <title>COD Collection · AD JOY PANEL</title>
 <link rel="stylesheet" href="../../assets/css/base.css">
 <link rel="stylesheet" href="../../assets/css/panel-theme.css">
-<link rel="stylesheet" href="cod-collection.css?v=20261126-compact-cod-form-1">
+<link rel="stylesheet" href="cod-collection.css?v=20261128-cod-expense-reconcile-1">
 </head><body class="cod-locked"><main class="page-content">
 <header class="page-head cod-page-header"><div><h1 class="page-title">COD Collection</h1>
 <p class="page-sub">Rider collection and payment-agent settlement · Firebase-synced daily ledger</p></div>
@@ -27,6 +27,7 @@
   <button type="button" class="cod-tab" role="tab" id="codAgentTab" aria-controls="codAgentTabPanel" aria-selected="false" tabindex="-1">
     <span class="cod-tab-icon" aria-hidden="true">৳</span><span>Agent Payment</span>
   </button>
+  <button type="button" class="cod-tab" role="tab" id="codExpenseTab" aria-controls="codExpenseTabPanel" aria-selected="false" tabindex="-1"><span class="cod-tab-icon" aria-hidden="true">≡</span><span>Expenses &amp; Reconciliation</span></button>
 </nav>
 <section id="codRiderTabPanel" class="cod-tab-panel" role="tabpanel" aria-labelledby="codRiderTab">
 <div class="cod-workspace-grid">
@@ -120,6 +121,55 @@
 </div>
 </section>
 </section>
+<section id="codExpenseTabPanel" class="cod-tab-panel" role="tabpanel" aria-labelledby="codExpenseTab" hidden>
+<section class="card cod-section cod-expenses-section">
+  <div class="cod-section-head"><div><h2>Expenses &amp; Cash Reconciliation</h2><span>Record cash usage separately. Rider COD and Total Collected never change.</span></div></div>
+  <div class="cod-expense-metrics" aria-live="polite">
+    <div class="cod-expense-stat"><small>Cash Collected</small><strong id="expenseCashCollected">৳0.00</strong></div>
+    <div class="cod-expense-stat"><small>Cash Paid to Agent</small><strong id="expenseAgentCash">৳0.00</strong></div>
+    <div class="cod-expense-stat"><small>Authorized Expenses</small><strong id="expenseApproved">৳0.00</strong></div>
+    <div class="cod-expense-stat"><small>Personal Use</small><strong id="expensePersonalUsed">৳0.00</strong></div>
+    <div class="cod-expense-stat"><small>Personal Cash Returned</small><strong id="expensePersonalReturned">৳0.00</strong></div>
+    <div class="cod-expense-stat"><small>Personal Amount to Return</small><strong id="expensePersonalOutstanding">৳0.00</strong></div>
+    <div class="cod-expense-stat cod-expense-balance"><small>Cash Remaining</small><strong id="expenseCashBalance">৳0.00</strong></div>
+    <div class="cod-expense-stat"><small>Online Balance (separate)</small><strong id="expenseOnlineBalance">৳0.00</strong></div>
+  </div>
+  <div class="cod-expense-columns">
+    <div class="cod-expense-editor">
+      <h3>New Expense / Cash Return</h3>
+      <form id="codExpenseForm" class="cod-expense-form">
+        <label>Type<select id="codExpenseType" required>
+          <option value="fuel">Fuel — authorized office expense</option>
+          <option value="office">Hub / Office — authorized expense</option>
+          <option value="other">Other authorized expense</option>
+          <option value="personal">Personal Use — must return</option>
+          <option value="repayment">Return Personal Cash to COD</option>
+        </select></label>
+        <label>Amount (BDT)<input id="codExpenseAmount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0.00" required></label>
+        <label>Receipt / Reference (optional)<input id="codExpenseRef" maxlength="140" placeholder="Voucher / transaction ID"></label>
+        <label class="cod-expense-note">Reason / Notes<input id="codExpenseNote" maxlength="500" required placeholder="Describe the expense or money returned"></label>
+        <label id="codExpenseApprovalLine" class="cod-expense-approval"><input type="checkbox" id="codExpenseApproval"> I confirm the office expense is authorized for COD settlement.</label>
+        <p id="codExpenseTypeHelp" class="cod-expense-help">Only authorized office expenses count toward settlement. Keep receipts.</p>
+        <div class="cod-expense-actions">
+          <button type="submit" id="codExpenseSave" class="btn btn-primary">Save Expense</button>
+          <button type="button" id="codExpenseCancel" class="btn btn-light" hidden>Cancel Edit</button>
+        </div>
+      </form>
+    </div>
+    <div class="cod-expense-side">
+      <h3>Cash Reconciliation</h3>
+      <p id="codExpenseCashFormula" class="cod-expense-formula"></p>
+      <p id="codExpenseSettleFormula" class="cod-expense-formula"></p>
+      <p class="cod-expense-warning">Personal Use is <strong>not</strong> an authorized office expense and remains repayable. Expenses do not reduce Rider COD or Total Collected.</p>
+      <p class="cod-expense-warning">This tab records <strong>cash only</strong>. Online collections and online agent payments are shown separately.</p>
+    </div>
+  </div>
+  <details id="codExpenseHistoryDetails" class="cod-history-details">
+    <summary>Expense &amp; Cash Return History <span class="cod-history-count" id="codExpenseHistoryCount"></span></summary>
+    <div class="cod-table-scroll"><table class="cod-table"><thead><tr><th>Type</th><th>Amount</th><th>Receipt / Note</th><th>Action</th></tr></thead><tbody id="codExpenseRows"></tbody></table></div>
+  </details>
+</section>
+</section>
 <section class="card cod-section cod-data-tools" aria-labelledby="codDataHeading">
 <div class="cod-section-head"><div><h2 id="codDataHeading">Export &amp; Backup</h2>
 <span>Download reports or back up your cloud ledger</span></div></div>
@@ -150,7 +200,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="cod-collection.js?v=20261126-compact-cod-form-1"></script><script>
+<script src="cod-collection.js?v=20261128-cod-expense-reconcile-1"></script><script>
 (() => {
   const form = document.getElementById('agentForm');
   const method = document.getElementById('agentMethod');
