@@ -803,6 +803,57 @@ let selectedRiderId = null;
 let selectedRiderDate = null;
 let transactionFeedback=null;
 
+// The overview Online Payment total is based on rider payments (anything
+// except Cash), not Agent payments. Detail rows use that exact same ledger.
+function onlineRiderTransactions(day){
+  return day.riders.flatMap(rider=>rider.payments
+    .filter(payment=>payment.method!=='Cash')
+    .map(payment=>({
+      riderId:rider.id,riderName:rider.name,method:payment.method,
+      amount:payment.amount,reference:payment.reference||''
+    })));
+}
+function renderOnlineTransactionDetails(day){
+  const rows=x('codOnlineDetailsRows');
+  rows.replaceChildren();
+  const entries=onlineRiderTransactions(day);
+  const sum=entries.reduce((total,entry)=>total+entry.amount,0);
+  x('codOnlineDetailsDate').textContent=today();
+  x('codOnlineDetailsCount').textContent=entries.length+
+    (entries.length===1?' transaction':' transactions');
+  x('codOnlineDetailsTotal').textContent=money(sum);
+  if(!entries.length){
+    const row=el('tr'),cell=el('td','cod-empty','No online payments recorded for the selected work date.');
+    cell.colSpan=4;row.append(cell);rows.append(row);
+  }
+  for(const payment of entries){
+    const row=el('tr');
+    row.append(
+      el('td','',payment.riderName),
+      el('td','',payment.method),
+      el('td','',money(payment.amount)),
+      el('td','cod-online-reference',payment.reference||'—')
+    );
+    rows.append(row);
+  }
+}
+const onlineDetailsToggle=x('codOnlineDetailsToggle');
+const onlineDetailsPanel=x('codOnlineDetails');
+onlineDetailsToggle.addEventListener('click',()=>{
+  const opening=onlineDetailsPanel.hidden;
+  onlineDetailsPanel.hidden=!opening;
+  onlineDetailsToggle.setAttribute('aria-expanded',String(opening));
+  if(opening){
+    renderOnlineTransactionDetails(current());
+    onlineDetailsPanel.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+});
+x('codOnlineDetailsClose').addEventListener('click',()=>{
+  onlineDetailsPanel.hidden=true;
+  onlineDetailsToggle.setAttribute('aria-expanded','false');
+  onlineDetailsToggle.focus();
+});
+
 function render(){
   const d=current(), target=x('codRiders');
   const date=today();
@@ -906,6 +957,8 @@ function render(){
     ['codCollected',collected],['codDue',due],['codOver',over],
     ['agentExpectedCOD',total],['agentPaid',agent],['agentCollectedTotal',collected]
   ])x(id).textContent=money(n);
+  // Keep the open detail panel synchronized with the selected date and edits.
+  renderOnlineTransactionDetails(d);
   // The main agent comparison is against the PANEL COD, not collected cash.
   // Keep the cash-reconciliation gap visible as a separate figure.
   const agentVsCOD=agent-total,agentVsCollected=agent-collected;
