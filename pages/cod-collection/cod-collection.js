@@ -1087,14 +1087,14 @@ function render(){
 /* Two accessible workspaces share the same daily Firebase record; tabs only
    change visibility, never the data, selected date or calculation rules. */
 function selectCODTab(tab,moveFocus=false){
-  const next=tab==='agent'?'agent':'rider';
-  for(const [name,buttonId,panelId] of [
-    ['rider','codRiderTab','codRiderTabPanel'],
-    ['agent','codAgentTab','codAgentTabPanel']
-  ]){
-    const active=name===next;
-    const btn=x(buttonId);
-    const panel=x(panelId);
+  const names=['rider','agent','expense'];
+  const next=names.includes(tab)?tab:'rider';
+  const tabs={rider:['codRiderTab','codRiderTabPanel'],
+    agent:['codAgentTab','codAgentTabPanel'],
+    expense:['codExpenseTab','codExpenseTabPanel']};
+  for(const name of names){
+    const [buttonId,panelId]=tabs[name],active=name===next;
+    const btn=x(buttonId),panel=x(panelId);
     btn.setAttribute('aria-selected',String(active));
     btn.tabIndex=active?0:-1;
     btn.classList.toggle('is-active',active);
@@ -1102,13 +1102,15 @@ function selectCODTab(tab,moveFocus=false){
     if(active&&moveFocus)btn.focus();
   }
 }
-for(const [name,id] of [['rider','codRiderTab'],['agent','codAgentTab']]){
+for(const name of ['rider','agent','expense']){
+  const id=name==='rider'?'codRiderTab':name==='agent'?'codAgentTab':'codExpenseTab';
   x(id).addEventListener('click',()=>selectCODTab(name));
   x(id).addEventListener('keydown',event=>{
+    const tabs=['rider','agent','expense'];
     if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
     event.preventDefault();
-    const next=event.key==='Home'?'rider':event.key==='End'?'agent':
-      name==='rider'?'agent':'rider';
+    const next=event.key==='Home'?tabs[0]:event.key==='End'?tabs[2]:
+      tabs[(tabs.indexOf(name)+(event.key==='ArrowRight'?1:2))%3];
     selectCODTab(next,true);
   });
 }
