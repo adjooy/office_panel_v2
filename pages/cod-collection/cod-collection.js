@@ -27,7 +27,20 @@ function validRoster(value){
     r.name.trim().length>0&&r.name.length<=90);
 }
 function dayRider(info){return {id:info.id,name:info.name,cod:0,payments:[],remarks:'',sent:false};}
-function defaultDay(){return {riders:riderRoster.map(dayRider),agent:[],transfers:[],codAdditions:[]};}
+function defaultDay(){return {riders:riderRoster.map(dayRider),agent:[],transfers:[],codAdditions:[],expenses:[]};}
+const EXPENSE_TYPES={fuel:'Fuel (authorized)',office:'Hub / Office (authorized)',other:'Other Authorized Expense',personal:'Personal Use',repayment:'Personal Cash Returned'};
+const APPROVED_EXPENSES=new Set(['fuel','office','other']);
+function expenseEntries(day){return Array.isArray(day.expenses)?day.expenses:[];}
+function expenseTotals(day){
+  const t={authorized:0,personal:0,returned:0};
+  for(const e of expenseEntries(day)){
+    if(APPROVED_EXPENSES.has(e.type))t.authorized+=e.amount;
+    else if(e.type==='personal')t.personal+=e.amount;
+    else if(e.type==='repayment')t.returned+=e.amount;
+  }
+  t.outstanding=t.personal-t.returned;
+  return t;
+}
 function dayAdditions(day){return Array.isArray(day.codAdditions)?day.codAdditions:[];}
 function normalizeDayRiders(day){
   if(!day||!Array.isArray(day.riders))return;
@@ -66,7 +79,7 @@ x('codDate').value=bdToday();
 const today=()=>x('codDate').value;
 function current(){
   const date=today();
-  if(isExpired(date))return {riders:[],agent:[],transfers:[],codAdditions:[]};
+  if(isExpired(date))return {riders:[],agent:[],transfers:[],codAdditions:[],expenses:[]};
   if(!db.days[date])db.days[date]=defaultDay();
   normalizeDayRiders(db.days[date]);
   return db.days[date];
@@ -115,6 +128,23 @@ function validateDay(v){
   }
   if(v.agent.length>2500)throw Error('Too many payments in one day');
   for(const p of v.agent)validatePayment(p);
+  if(v.expenses!==undefined){
+    if(!Array.isArray(v.expenses)||v.expenses.length>2500)throw Error('Invalid cash expense ledger');
+    const ids=new Set();
+    for(const e of v.expenses){
+      if(!e||typeof e.id!=='string'||!e.id||ids.has(e.id)||
+        !Object.prototype.hasOwnProperty.call(EXPENSE_TYPES,e.type)||
+        !Number.isSafeInteger(e.amount)||e.amount<=0||
+        typeof e.reference!=='string'||e.reference.length>140||
+        typeof e.note!=='string'||!e.note.trim()||e.note.length>500||
+        typeof e.approved!=='boolean'||(APPROVED_EXPENSES.has(e.type)!==e.approved)||
+        (e.createdAt!==undefined&&(typeof e.createdAt!=='string'||e.createdAt.length>40)))
+        throw Error('Invalid expense or personal cash return');
+      ids.add(e.id);
+    }
+    if(expenseTotals(v).outstanding<0)
+      throw Error('Cash returned exceeds Personal Use recorded for the selected date.');
+  }
   if(v.transfers!==undefined){
     if(!Array.isArray(v.transfers)||v.transfers.length>3000)throw Error('Invalid COD transfers');
     const ids=new Set();
@@ -178,7 +208,7 @@ function persist(){
       const revision=snap.exists?Number(snap.data().revision||0):0;
       if(revision!==baseline)throw Error('This date changed on another device. Export a backup and refresh the cloud data before editing.');
       tx.set(ref,{
-        date,riders:data.riders,agent:data.agent,transfers:data.transfers||[],codAdditions:data.codAdditions||[],
+        date,riders:data.riders,agent:data.agent,transfers:data.transfers||[],codAdditions:data.codAdditions||[],expenses:data.expenses||[],
         revision:revision+1,
         expiresAt:firebase.firestore.Timestamp.fromMillis(expiryMs(date)),
         updatedAt:firebase.firestore.FieldValue.serverTimestamp()
@@ -227,7 +257,7 @@ async function loadCloud(){
     const value=doc.data();
     if(!value||!Array.isArray(value.riders)||!Array.isArray(value.agent))continue;
     validateDay(value);
-    loaded.days[doc.id]={riders:value.riders,agent:value.agent,transfers:value.transfers||[],codAdditions:value.codAdditions||[]};
+    loaded.days[doc.id]={riders:value.riders,agent:value.agent,transfers:value.transfers||[],codAdditions:value.codAdditions||[],expenses:value.expenses||[]};
     versions[doc.id]=Number(value.revision||0);
   }
   // First-time migration of the old local-only COD ledger. Existing cloud
@@ -242,7 +272,7 @@ async function loadCloud(){
       const remote=await tx.get(ref);
       if(remote.exists)return false;
       tx.set(ref,{
-        date,riders:value.riders,agent:value.agent,transfers:value.transfers||[],codAdditions:value.codAdditions||[],
+        date,riders:value.riders,agent:value.agent,transfers:value.transfers||[],codAdditions:value.codAdditions||[],expenses:value.expenses||[],
         revision:1,
         expiresAt:firebase.firestore.Timestamp.fromMillis(expiryMs(date)),
         updatedAt:firebase.firestore.FieldValue.serverTimestamp()
@@ -254,7 +284,7 @@ async function loadCloud(){
       const remote=await ref.get();
       if(remote.exists){
         const valueRemote=remote.data();
-        loaded.days[date]={riders:valueRemote.riders,agent:valueRemote.agent,transfers:valueRemote.transfers||[],codAdditions:valueRemote.codAdditions||[]};
+        loaded.days[date]={riders:valueRemote.riders,agent:valueRemote.agent,transfers:valueRemote.transfers||[],codAdditions:valueRemote.codAdditions||[],expenses:valueRemote.expenses||[]};
         versions[date]=Number(valueRemote.revision||0);
       }
     }
@@ -1160,7 +1190,7 @@ x('codRestore').addEventListener('change',async e=>{
         const snap=await tx.get(ref);
         if(snap.exists)return false;
         tx.set(ref,{
-          date,riders:value.riders,agent:value.agent,transfers:value.transfers||[],codAdditions:value.codAdditions||[],revision:1,
+          date,riders:value.riders,agent:value.agent,transfers:value.transfers||[],codAdditions:value.codAdditions||[],expenses:value.expenses||[],revision:1,
           expiresAt:firebase.firestore.Timestamp.fromMillis(expiryMs(date)),
           updatedAt:firebase.firestore.FieldValue.serverTimestamp()
         });
