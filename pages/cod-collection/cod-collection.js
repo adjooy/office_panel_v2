@@ -805,53 +805,123 @@ let transactionFeedback=null;
 
 // The overview Online Payment total is based on rider payments (anything
 // except Cash), not Agent payments. Detail rows use that exact same ledger.
-function onlineRiderTransactions(day){
-  return day.riders.flatMap(rider=>rider.payments
-    .filter(payment=>payment.method!=='Cash')
-    .map(payment=>({
-      riderId:rider.id,riderName:rider.name,method:payment.method,
-      amount:payment.amount,reference:payment.reference||''
-    })));
+/* All six Overview totals open one reusable detail table. Values are derived
+   from the same daily rider ledgers as the summary; this never changes data. */
+const overviewKinds=['total','collected','cash','online','due','over'];
+const overviewButtons={
+  total:'codTotalDetailsToggle',
+  collected:'codCollectedDetailsToggle',
+  cash:'codCashDetailsToggle',
+  online:'codOnlineDetailsToggle',
+  due:'codDueDetailsToggle',
+  over:'codOverDetailsToggle'
+};
+const signedMoney=value=>value<0?'−'+money(-value):value>0?'+'+money(value):money(0);
+function overviewDetailData(day,kind){
+  const allPayments=day.riders.flatMap(rider=>rider.payments.map(payment=>({
+    riderName:rider.name,
+    method:payment.method,
+    amount:payment.amount,
+    reference:payment.reference||''
+  })));
+  const allRows=allPayments.filter(p=>kind==='collected'||
+    (kind==='cash'&&p.method==='Cash')||
+    (kind==='online'&&p.method!=='Cash'));
+  if(['collected','cash','online'].includes(kind)){
+    const name=kind==='cash'?'Cash Collected':kind==='online'?'Online Payment':'Total Collected';
+    return {
+      title:name+' Details',
+      description:kind==='cash'?'Only Cash payments received from riders':
+        kind==='online'?'Rider payments via bKash, Nagad, Bank Transfer or other non-Cash methods':
+        'All Cash and Online payments received from riders',
+      headers:['Rider','Payment Method','Amount','Transaction / Reference'],
+      amountIndex:2,
+      rows:allRows.map(p=>[p.riderName,p.method,money(p.amount),p.reference||'—']),
+      count:allRows.length,
+      total:allRows.reduce((n,p)=>n+p.amount,0),
+      empty:'No '+name.toLowerCase()+' transactions recorded for this work date.'
+    };
+  }
+  if(kind==='total'){
+    const rows=day.riders.map(rider=>[
+      rider.name,
+      money(originalCOD(day,rider.id)),
+      signedMoney(transferAmounts(day,rider.id).net),
+      money(effectiveCOD(day,rider.id))
+    ]);
+    return {
+      title:'Total COD Details',
+      description:'Rider-wise Original COD and collection responsibility after transfers',
+      headers:['Rider','Original COD (Hive)','Net Transfer','After Transfer'],
+      amountIndex:3,rows,count:rows.length,
+      total:day.riders.reduce((n,r)=>n+effectiveCOD(day,r.id),0),
+      empty:'No riders recorded for this work date.'
+    };
+  }
+  const isDue=kind==='due';
+  const entries=day.riders.map(rider=>{
+    const assigned=effectiveCOD(day,rider.id),collected=sums(rider).paid;
+    return {name:rider.name,assigned,collected,difference:assigned-collected};
+  }).filter(r=>isDue?r.difference>0:r.difference<0);
+  return {
+    title:isDue?'Rider Due Details':'Overpaid by Riders Details',
+    description:isDue?'Riders with COD collection still outstanding':
+      'Riders whose recorded collections exceed their assigned COD',
+    headers:['Rider','After Transfer','Collected',isDue?'Rider Due':'Overpaid'],
+    amountIndex:3,
+    rows:entries.map(r=>[
+      r.name,money(r.assigned),money(r.collected),money(Math.abs(r.difference))
+    ]),
+    count:entries.length,
+    total:entries.reduce((n,r)=>n+Math.abs(r.difference),0),
+    empty:isDue?'No riders have outstanding COD.':'No rider overpayments recorded.'
+  };
 }
-function renderOnlineTransactionDetails(day){
-  const rows=x('codOnlineDetailsRows');
-  rows.replaceChildren();
-  const entries=onlineRiderTransactions(day);
-  const sum=entries.reduce((total,entry)=>total+entry.amount,0);
+let activeOverviewKind=null;
+const overviewDetailsPanel=x('codOnlineDetails');
+function renderOverviewDetail(day){
+  if(!activeOverviewKind)return;
+  const detail=overviewDetailData(day,activeOverviewKind);
+  x('codOnlineDetailsTitle').textContent=detail.title;
+  x('codOverviewDetailsDescription').textContent=detail.description;
   x('codOnlineDetailsDate').textContent=today();
-  x('codOnlineDetailsCount').textContent=entries.length+
-    (entries.length===1?' transaction':' transactions');
-  x('codOnlineDetailsTotal').textContent=money(sum);
-  if(!entries.length){
-    const row=el('tr'),cell=el('td','cod-empty','No online payments recorded for the selected work date.');
-    cell.colSpan=4;row.append(cell);rows.append(row);
+  x('codOnlineDetailsCount').textContent=detail.count+
+    (detail.count===1?' entry':' entries');
+  x('codOnlineDetailsTotal').textContent=money(detail.total);
+  const header=x('codOverviewDetailsHeader');
+  header.replaceChildren();
+  for(const title of detail.headers){const th=el('th','',title);th.scope='col';header.append(th);}
+  const body=x('codOnlineDetailsRows');body.replaceChildren();
+  if(!detail.rows.length){
+    const row=el('tr'),cell=el('td','cod-empty',detail.empty);
+    cell.colSpan=detail.headers.length;row.append(cell);body.append(row);
   }
-  for(const payment of entries){
+  for(const data of detail.rows){
     const row=el('tr');
-    row.append(
-      el('td','',payment.riderName),
-      el('td','',payment.method),
-      el('td','',money(payment.amount)),
-      el('td','cod-online-reference',payment.reference||'—')
-    );
-    rows.append(row);
+    data.forEach((value,i)=>row.append(el('td',i===detail.amountIndex?
+      'cod-overview-detail-amount':'cod-overview-detail-value',value)));
+    body.append(row);
   }
 }
-const onlineDetailsToggle=x('codOnlineDetailsToggle');
-const onlineDetailsPanel=x('codOnlineDetails');
-onlineDetailsToggle.addEventListener('click',()=>{
-  const opening=onlineDetailsPanel.hidden;
-  onlineDetailsPanel.hidden=!opening;
-  onlineDetailsToggle.setAttribute('aria-expanded',String(opening));
+function selectOverviewKind(kind){
+  const opening=activeOverviewKind!==kind||overviewDetailsPanel.hidden;
+  activeOverviewKind=opening?kind:null;
+  overviewDetailsPanel.hidden=!opening;
+  for(const type of overviewKinds)
+    x(overviewButtons[type]).setAttribute('aria-expanded',String(opening&&type===kind));
   if(opening){
-    renderOnlineTransactionDetails(current());
-    onlineDetailsPanel.scrollIntoView({behavior:'smooth',block:'nearest'});
+    renderOverviewDetail(current());
+    overviewDetailsPanel.scrollIntoView({behavior:'smooth',block:'nearest'});
   }
-});
+}
+for(const kind of overviewKinds)
+  x(overviewButtons[kind]).addEventListener('click',()=>selectOverviewKind(kind));
 x('codOnlineDetailsClose').addEventListener('click',()=>{
-  onlineDetailsPanel.hidden=true;
-  onlineDetailsToggle.setAttribute('aria-expanded','false');
-  onlineDetailsToggle.focus();
+  const previous=activeOverviewKind;
+  activeOverviewKind=null;
+  overviewDetailsPanel.hidden=true;
+  for(const type of overviewKinds)x(overviewButtons[type]).setAttribute('aria-expanded','false');
+  if(previous)x(overviewButtons[previous]).focus();
 });
 
 function render(){
@@ -958,7 +1028,7 @@ function render(){
     ['agentExpectedCOD',total],['agentPaid',agent],['agentCollectedTotal',collected]
   ])x(id).textContent=money(n);
   // Keep the open detail panel synchronized with the selected date and edits.
-  renderOnlineTransactionDetails(d);
+  if(activeOverviewKind)renderOverviewDetail(d);
   // The main agent comparison is against the PANEL COD, not collected cash.
   // Keep the cash-reconciliation gap visible as a separate figure.
   const agentVsCOD=agent-total,agentVsCollected=agent-collected;
