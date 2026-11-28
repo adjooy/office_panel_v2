@@ -767,3 +767,38 @@ body.cod-locked #codExpenseForm,body.cod-locked #codExpenseRows{pointer-events:n
   .cod-online-view-hint{font-size:9px}
   .cod-online-details-header h3{font-size:15px}
 }
+
+/* Consistent clickable behavior for all six daily overview figures. */
+.cod-summary .card.cod-stat-clickable{padding:0;overflow:hidden}
+.cod-stat-clickable .cod-online-summary-button{
+  height:100%;
+  min-height:98px;
+}
+.cod-stat-clickable .cod-online-summary-button[aria-expanded="true"]{
+  background:#e9f2ff;
+}
+.cod-stat-clickable .cod-online-summary-button:hover .cod-online-view-hint{
+  text-decoration:underline;
+}
+.cod-online-details-table td.cod-overview-detail-amount{
+  color:#215b9e;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+.cod-online-details-table td.cod-overview-detail-value{
+  max-width:310px;
+  overflow-wrap:anywhere;
+  white-space:normal;
+}
+/* Earlier online-only styling targeted the third column; the amount's
+   position now depends on the selected metric. */
+.cod-online-details-table td:nth-child(3):not(.cod-overview-detail-amount){
+  color:inherit;
+  font-weight:inherit;
+  white-space:normal;
+}
+@media(max-width:520px){
+  .cod-stat-clickable .cod-online-summary-button{min-height:87px}
+  .cod-online-view-hint{white-space:nowrap}
+}
