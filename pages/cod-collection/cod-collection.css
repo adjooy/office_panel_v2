@@ -708,3 +708,62 @@ body.cod-locked #codExpenseForm,body.cod-locked #codExpenseRows{pointer-events:n
  .cod-expense-form .cod-expense-note,.cod-expense-approval,.cod-expense-help,.cod-expense-actions{grid-column:1}
  .cod-expense-actions button{width:100%}
 }
+
+/* Clickable Online Payment overview and its live per-rider transaction details. */
+.cod-stat-online{overflow:hidden}
+.cod-summary .card.cod-stat-online{padding:0}
+.cod-online-summary-button{
+  appearance:none;display:flex;flex-direction:column;align-items:stretch;
+  justify-content:center;gap:0;min-height:98px;
+  width:100%;padding:14px;text-align:left;border:0;
+  border-radius:inherit;background:transparent;color:inherit;
+  cursor:pointer;font:inherit;
+}
+.cod-online-summary-button:hover{background:#eef5ff}
+.cod-online-summary-button:focus-visible{
+  outline:3px solid #557bd2;outline-offset:-4px;
+}
+.cod-online-summary-button small{
+  display:flex;justify-content:space-between;align-items:center;
+  gap:6px;min-height:0!important;margin:0 0 7px!important;
+}
+.cod-online-summary-button strong{line-height:1.35}
+.cod-online-view-hint{
+  display:inline-flex;align-items:center;gap:3px;
+  color:#365faf;font-size:10px;font-weight:800;white-space:nowrap;
+}
+.cod-online-summary-button[aria-expanded="true"]{background:#e9f2ff}
+#codOnlineDetails[hidden]{display:none!important}
+.cod-online-details{
+  margin:0 0 16px;
+  padding:clamp(12px,1.5vw,22px);
+  border:1px solid #cfdef7;border-radius:14px;
+  box-shadow:0 4px 18px rgba(44,78,136,.08);
+  background:#fff;
+}
+.cod-online-details-header{
+  display:flex;align-items:start;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;margin-bottom:12px;
+}
+.cod-online-details-header h3{
+  margin:0 0 5px;color:#20365e;font-size:17px;
+}
+.cod-online-details-header p{margin:0;font-size:12px;color:#667892}
+.cod-online-details-header .btn{min-height:34px}
+.cod-online-details-summary{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:10px;padding:12px 14px;
+  border:1px solid #e2eaf6;border-radius:10px;background:#f5f9ff;
+  color:#436087;font-size:12px;font-weight:700;
+}
+.cod-online-details-summary strong{color:#235ca9;font-size:19px;font-variant-numeric:tabular-nums}
+.cod-online-details .cod-table-scroll{margin:12px 0 0}
+.cod-online-details-table{min-width:580px}
+.cod-online-details-table td:nth-child(3){font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;color:#215b9e}
+.cod-online-reference{overflow-wrap:anywhere;white-space:normal!important}
+@media(max-width:520px){
+  .cod-online-summary-button{padding:12px;min-height:87px}
+  .cod-online-summary-button small{flex-wrap:wrap}
+  .cod-online-view-hint{font-size:9px}
+  .cod-online-details-header h3{font-size:15px}
+}
