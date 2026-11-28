@@ -3,7 +3,7 @@
 <title>COD Collection · AD JOY PANEL</title>
 <link rel="stylesheet" href="../../assets/css/base.css">
 <link rel="stylesheet" href="../../assets/css/panel-theme.css">
-<link rel="stylesheet" href="cod-collection.css?v=20261128-online-transaction-details-1">
+<link rel="stylesheet" href="cod-collection.css?v=20261128-all-overview-details-1">
 </head><body class="cod-locked"><main class="page-content">
 <header class="page-head cod-page-header"><div><h1 class="page-title">COD Collection</h1>
 <p class="page-sub">Rider collection and payment-agent settlement · Firebase-synced daily ledger</p></div>
@@ -11,22 +11,22 @@
 <section class="cod-overview" aria-label="Daily COD summary">
   <div class="cod-overview-heading"><div><h2>Today's Collection Overview</h2><p>Selected work date · amounts entered in this panel</p></div><span id="codRiderCount" class="cod-pill">0 riders</span></div>
   <div class="cod-summary cod-summary-simple" aria-live="polite">
-    <div class="card cod-stat cod-stat-total"><small>Total COD</small><strong id="codTotal">৳0.00</strong></div>
-    <div class="card cod-stat cod-stat-collected"><small>Total Collected</small><strong id="codCollected">৳0.00</strong></div>
-    <div class="card cod-stat cod-stat-cash"><small>Cash Collected</small><strong id="codCash">৳0.00</strong></div>
-    <div class="card cod-stat cod-stat-online">
+    <div class="card cod-stat cod-stat-total cod-stat-clickable"><button type="button" id="codTotalDetailsToggle" class="cod-online-summary-button" aria-controls="codOnlineDetails" aria-expanded="false" title="View total cod details for the selected work date"><small>Total COD <span class="cod-online-view-hint">View Details <span aria-hidden="true">↗</span></span></small><strong id="codTotal">৳0.00</strong></button></div>
+    <div class="card cod-stat cod-stat-collected cod-stat-clickable"><button type="button" id="codCollectedDetailsToggle" class="cod-online-summary-button" aria-controls="codOnlineDetails" aria-expanded="false" title="View total collected details for the selected work date"><small>Total Collected <span class="cod-online-view-hint">View Details <span aria-hidden="true">↗</span></span></small><strong id="codCollected">৳0.00</strong></button></div>
+    <div class="card cod-stat cod-stat-cash cod-stat-clickable"><button type="button" id="codCashDetailsToggle" class="cod-online-summary-button" aria-controls="codOnlineDetails" aria-expanded="false" title="View cash collected details for the selected work date"><small>Cash Collected <span class="cod-online-view-hint">View Details <span aria-hidden="true">↗</span></span></small><strong id="codCash">৳0.00</strong></button></div>
+    <div class="card cod-stat cod-stat-online cod-stat-clickable">
       <button type="button" id="codOnlineDetailsToggle" class="cod-online-summary-button" aria-controls="codOnlineDetails" aria-expanded="false" title="View rider online transactions for selected work date">
         <small>Online Payment <span class="cod-online-view-hint">View Details <span aria-hidden="true">↗</span></span></small>
         <strong id="codOnline">৳0.00</strong>
       </button>
     </div>
-    <div class="card cod-stat cod-stat-due"><small>Rider Due</small><strong id="codDue">৳0.00</strong></div>
-    <div class="card cod-stat cod-stat-over"><small>Overpaid by Riders</small><strong id="codOver">৳0.00</strong></div>
+    <div class="card cod-stat cod-stat-due cod-stat-clickable"><button type="button" id="codDueDetailsToggle" class="cod-online-summary-button" aria-controls="codOnlineDetails" aria-expanded="false" title="View rider due details for the selected work date"><small>Rider Due <span class="cod-online-view-hint">View Details <span aria-hidden="true">↗</span></span></small><strong id="codDue">৳0.00</strong></button></div>
+    <div class="card cod-stat cod-stat-over cod-stat-clickable"><button type="button" id="codOverDetailsToggle" class="cod-online-summary-button" aria-controls="codOnlineDetails" aria-expanded="false" title="View overpaid by riders details for the selected work date"><small>Overpaid by Riders <span class="cod-online-view-hint">View Details <span aria-hidden="true">↗</span></span></small><strong id="codOver">৳0.00</strong></button></div>
   </div>
   <section id="codOnlineDetails" class="card cod-online-details" aria-labelledby="codOnlineDetailsTitle" hidden>
     <div class="cod-online-details-header">
-      <div><h3 id="codOnlineDetailsTitle">Online Transaction Details</h3>
-        <p>Rider payments other than Cash · Work Date: <span id="codOnlineDetailsDate"></span></p>
+      <div><h3 id="codOnlineDetailsTitle">Collection Details</h3>
+        <p><span id="codOverviewDetailsDescription">Breakdown for the selected work date</span> · Work Date: <span id="codOnlineDetailsDate"></span></p>
       </div>
       <button type="button" id="codOnlineDetailsClose" class="btn btn-light">Close</button>
     </div>
@@ -36,7 +36,7 @@
     </div>
     <div class="cod-table-scroll">
       <table class="cod-table cod-online-details-table">
-        <thead><tr><th>Rider</th><th>Payment Method</th><th>Amount</th><th>Transaction / Reference</th></tr></thead>
+        <thead><tr id="codOverviewDetailsHeader"><th>Rider</th><th>Payment Method</th><th>Amount</th><th>Transaction / Reference</th></tr></thead>
         <tbody id="codOnlineDetailsRows"></tbody>
       </table>
     </div>
@@ -223,7 +223,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="cod-collection.js?v=20261128-online-transaction-details-1"></script><script>
+<script src="cod-collection.js?v=20261128-all-overview-details-1"></script><script>
 (() => {
   const form = document.getElementById('agentForm');
   const method = document.getElementById('agentMethod');
