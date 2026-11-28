@@ -1184,12 +1184,17 @@ x('agentForm').addEventListener('submit',e=>{
 function generateAgentReportJpg(){
   const day=current();
   const entries=day.agent||[];
-  if(!entries.length)return alert('No agent payments saved for this work date.');
+  if(!entries.length&&!expenseEntries(day).length)return alert('No agent payments or cash expense records saved for this work date.');
   const cash=entries.filter(p=>p.method==='Cash');
   const online=entries.filter(p=>p.method!=='Cash');
   const sum=list=>list.reduce((n,p)=>n+p.amount,0);
   const paidToAgent=sum(entries);
   const panelCOD=transferStatus(day).base; // Total COD before rider-to-rider transfers
+  const riderPayments=day.riders.flatMap(r=>r.payments);
+  const cashCollected=riderPayments.filter(p=>p.method==='Cash').reduce((n,p)=>n+p.amount,0);
+  const onlineCollected=riderPayments.filter(p=>p.method!=='Cash').reduce((n,p)=>n+p.amount,0);
+  const expenseBalance=expenseAccounting(day,cashCollected,onlineCollected,panelCOD);
+  const expenseByType=key=>expenseEntries(day).filter(e=>e.type===key).reduce((n,e)=>n+e.amount,0);
   const settlementDifference=paidToAgent-panelCOD;
   const settlementStatus=settlementDifference>0?'AGENT OVERPAID':settlementDifference<0?'AGENT DUE':'SETTLED';
   const counted={};
@@ -1199,7 +1204,7 @@ function generateAgentReportJpg(){
     if(p.notes){for(const denom of NOTE_VALUES)counted[denom]+=p.notes[denom]||0;}
     else notCounted+=p.amount;
   }
-  const width=1200,height=1760;
+  const width=1200,height=2200;
   const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
   const g=canvas.getContext('2d');
   if(!g)return alert('JPG report unavailable in this browser.');
@@ -1213,7 +1218,7 @@ function generateAgentReportJpg(){
     g.fillText(String(value),x,y);
   };
   const m=value=>'BDT '+(value/100).toLocaleString('en-BD',{minimumFractionDigits:2,maximumFractionDigits:2});
-  rounded(48,42,1104,1676,22,'#ffffff');
+  rounded(48,42,1104,2116,22,'#ffffff');
   rounded(48,42,1104,128,22,'#17386a');g.fillStyle='#17386a';g.fillRect(48,115,1104,55);
   label('AGENT CASH HANDOVER REPORT',86,108,36,true,'#ffffff');
   label('AD JOY PANEL  |  Work Date: '+today(),86,149,21,false,'#e2eaff');
@@ -1264,9 +1269,28 @@ function generateAgentReportJpg(){
   // Wrap long method lines on narrow report space.
   const segments=otherText.match(/.{1,74}(?:\s|$)|.{1,74}/g)||[otherText];
   segments.slice(0,3).forEach((part,i)=>label(part.trim(),104,1468+i*30,19,false,'#3c526f'));
-  g.strokeStyle='#d7e1ef';g.lineWidth=2;g.beginPath();g.moveTo(85,1624);g.lineTo(1114,1624);g.stroke();
-  label('Prepared for agent handover',85,1672,20,false,'#64748b');
-  label('Report generated from saved COD Collection entries',1114,1672,17,false,'#64748b','right');
+  // Expense ledger is supplemental: never silently lower the Agent-vs-Total-COD figure.
+  label('CASH EXPENSE & PERSONAL USE BREAKDOWN',85,1605,26,true);
+  rounded(85,1630,1030,360,13,'#f4f7fc');
+  for(const [i,entry] of [
+    ['Fuel (authorized)',expenseByType('fuel')],
+    ['Hub / Office (authorized)',expenseByType('office')],
+    ['Other authorized expense',expenseByType('other')],
+    ['Personal Use (still owed)',expenseByType('personal')],
+    ['Personal Cash Returned',expenseByType('repayment')]
+  ].entries()){
+    const pos=1683+i*58;
+    label(entry[0],113,pos,23,i===3,'#314564');
+    label(m(entry[1]),1084,pos,24,true,i===3?'#a22b39':'#28466f','right');
+  }
+  label('Cash remaining: '+m(expenseBalance.cashRemaining),104,2026,22,true,
+    expenseBalance.cashRemaining<0?'#ab293b':'#176846');
+  label('Personal outstanding: '+m(expenseBalance.outstanding),1084,2026,22,true,
+    expenseBalance.outstanding>0?'#ab293b':'#176846','right');
+  label('Authorized expense records require actual approval; personal use is never an expense.',104,2055,17,false,'#64748b');
+  g.strokeStyle='#d7e1ef';g.lineWidth=2;g.beginPath();g.moveTo(85,2090);g.lineTo(1114,2090);g.stroke();
+  label('Prepared for agent handover',85,2130,20,false,'#64748b');
+  label('Report includes the selected date COD, Agent payments and cash expense ledger',1114,2130,15,false,'#64748b','right');
   canvas.toBlob(blob=>{
     if(!blob){alert('Could not generate JPG.');return;}
     const url=URL.createObjectURL(blob),anchor=document.createElement('a');
@@ -1297,6 +1321,9 @@ x('codExport').addEventListener('click',()=>{
   for(const p of d.agent)
     lines.push([today(),'Agent payment','','',p.method,centsToInput(p.amount),'','',
       p.reference+(p.notes?' | Notes: '+noteDescription(p.notes):''),'','']);
+  for(const e of expenseEntries(d))
+    lines.push([today(),EXPENSE_TYPES[e.type], '', '', 'Cash',centsToInput(e.amount),'','',
+      (e.reference?e.reference+' | ':'')+e.note,'','']);
   const csv='\uFEFF'+lines.map(row=>row.map(v=>{
     let value=String(v??'');
     // Avoid spreadsheet formula injection from user-entered notes/names.
