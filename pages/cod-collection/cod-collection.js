@@ -668,6 +668,137 @@ x('codTransferForm').addEventListener('submit',e=>{
 });
 
 const transferPanelNode=x('codTransferPanel');
+
+/* Daily COD cash allocations are a separate sub-ledger, never Rider COD. */
+let editingExpenseId=null,editingExpenseDate=null;
+function updateExpenseTypeUI(){
+  const type=x('codExpenseType').value,approved=APPROVED_EXPENSES.has(type);
+  x('codExpenseApprovalLine').hidden=!approved;
+  if(!approved)x('codExpenseApproval').checked=false;
+  x('codExpenseTypeHelp').textContent=
+    approved?'This must be an authorized office expense. Keep the receipt or voucher.':
+    type==='personal'?'Personal Use is not an office expense. It remains owed until returned.':
+    'Return cash to the COD cash balance against Personal Use on this selected date.';
+}
+function resetExpenseEditor(){
+  editingExpenseId=null;editingExpenseDate=null;
+  x('codExpenseForm').reset();
+  x('codExpenseType').value='fuel';
+  x('codExpenseSave').textContent='Save Expense';
+  x('codExpenseCancel').hidden=true;
+  updateExpenseTypeUI();
+}
+function expenseAccounting(day,cashCollected,onlineCollected,totalCOD){
+  const totals=expenseTotals(day);
+  const cashAgent=day.agent.filter(p=>p.method==='Cash').reduce((n,p)=>n+p.amount,0);
+  const onlineAgent=day.agent.filter(p=>p.method!=='Cash').reduce((n,p)=>n+p.amount,0);
+  const paidToAgent=cashAgent+onlineAgent;
+  return {
+    ...totals,cashCollected,onlineCollected,cashAgent,onlineAgent,totalCOD,paidToAgent,
+    cashRemaining:cashCollected-cashAgent-totals.authorized-totals.personal+totals.returned,
+    onlineRemaining:onlineCollected-onlineAgent,
+    grossAgentGap:totalCOD-paidToAgent,
+    uncoveredAfterApproved:totalCOD-paidToAgent-totals.authorized
+  };
+}
+function renderExpenses(day,cashCollected,onlineCollected,totalCOD){
+  if(editingExpenseId&&(editingExpenseDate!==today()||!expenseEntries(day).some(e=>e.id===editingExpenseId))){
+    resetExpenseEditor();
+  }
+  const a=expenseAccounting(day,cashCollected,onlineCollected,totalCOD);
+  for(const [key,value] of [
+    ['expenseCashCollected',a.cashCollected],['expenseAgentCash',a.cashAgent],
+    ['expenseApproved',a.authorized],['expensePersonalUsed',a.personal],
+    ['expensePersonalReturned',a.returned],['expensePersonalOutstanding',a.outstanding],
+    ['expenseCashBalance',a.cashRemaining],['expenseOnlineBalance',a.onlineRemaining]
+  ]){
+    const node=x(key);node.textContent=money(value);
+    node.classList.toggle('is-negative',value<0||(key==='expensePersonalOutstanding'&&value>0));
+  }
+  x('codExpenseCashFormula').textContent=
+    'Cash '+money(a.cashCollected)+' − Agent cash '+money(a.cashAgent)+
+    ' − authorized expenses '+money(a.authorized)+' − personal use '+money(a.personal)+
+    ' + cash returned '+money(a.returned)+' = '+money(a.cashRemaining)+' cash remaining.';
+  x('codExpenseSettleFormula').textContent=
+    'Total COD '+money(a.totalCOD)+' − total paid to Agent '+money(a.paidToAgent)+
+    ' = '+money(a.grossAgentGap)+' original Agent-vs-COD gap. After authorized expenses: '+
+    money(a.uncoveredAfterApproved)+' not yet covered by Agent payments / approved expenses. '+
+    'Personal Use does NOT count toward settlement. Rider dues may also explain the gap.';
+  const items=expenseEntries(day);
+  x('codExpenseHistoryCount').textContent='('+items.length+')';
+  const rows=x('codExpenseRows');rows.replaceChildren();
+  if(!items.length){
+    const tr=el('tr'),td=el('td','cod-empty','No cash expenses or personal returns recorded for this date.');
+    td.colSpan=4;tr.append(td);rows.append(tr);
+  }
+  for(const entry of items.slice().reverse()){
+    const row=el('tr');
+    row.append(el('td','',EXPENSE_TYPES[entry.type]));
+    row.append(el('td','',money(entry.amount)));
+    const desc=el('td');
+    desc.append(el('strong','',entry.reference||'No receipt reference'),el('small','cod-expense-row-note',entry.note));
+    row.append(desc);
+    const actions=el('td');
+    actions.append(button('Edit',()=>{
+      if(!ensureReady())return;
+      editingExpenseId=entry.id;editingExpenseDate=today();
+      x('codExpenseType').value=entry.type;
+      x('codExpenseAmount').value=centsToInput(entry.amount);
+      x('codExpenseRef').value=entry.reference;
+      x('codExpenseNote').value=entry.note;
+      updateExpenseTypeUI();
+      x('codExpenseApproval').checked=entry.approved;
+      x('codExpenseSave').textContent='Update Entry';
+      x('codExpenseCancel').hidden=false;
+      selectCODTab('expense');
+      x('codExpenseForm').scrollIntoView({behavior:'smooth',block:'center'});
+    }));
+    actions.append(button('Remove',()=>{
+      if(!ensureReady())return;
+      if(!confirm('Remove '+EXPENSE_TYPES[entry.type]+' '+money(entry.amount)+'?'))return;
+      const candidate=clone(current());
+      candidate.expenses=expenseEntries(candidate).filter(e=>e.id!==entry.id);
+      try{validateDay(candidate);}catch(err){alert(err.message);return;}
+      db.days[today()]=candidate;
+      if(editingExpenseId===entry.id)resetExpenseEditor();
+      persist();render();
+    },'cod-danger'));
+    row.append(actions);rows.append(row);
+  }
+}
+x('codExpenseType').addEventListener('change',updateExpenseTypeUI);
+x('codExpenseCancel').addEventListener('click',resetExpenseEditor);
+x('codExpenseForm').addEventListener('submit',event=>{
+  event.preventDefault();if(!ensureReady())return;
+  const type=x('codExpenseType').value;
+  if(!Object.prototype.hasOwnProperty.call(EXPENSE_TYPES,type))return alert('Invalid expense category.');
+  const amount=parseMoney(x('codExpenseAmount').value);
+  if(amount===null||amount<=0)return alert('Enter a valid amount, maximum two decimal places.');
+  const reference=x('codExpenseRef').value.trim().slice(0,140);
+  const note=x('codExpenseNote').value.trim().slice(0,500);
+  if(!note)return alert('Enter a reason or note.');
+  const approved=APPROVED_EXPENSES.has(type);
+  if(approved&&!x('codExpenseApproval').checked)
+    return alert('Confirm this office expense is authorized, or choose Personal Use.');
+  if(editingExpenseId&&editingExpenseDate!==today())
+    return alert('Work date changed. Reopen the expense for editing.');
+  const day=current(),old=editingExpenseId?expenseEntries(day).find(e=>e.id===editingExpenseId):null;
+  if(editingExpenseId&&!old)return alert('This entry no longer exists. Refresh the date.');
+  const item={
+    id:old?.id||uid(),type,amount,reference,note,approved,
+    createdAt:old?.createdAt||new Date().toISOString()
+  };
+  const candidate=clone(day);
+  candidate.expenses=old?expenseEntries(candidate).map(e=>e.id===old.id?item:e):
+    [...expenseEntries(candidate),item];
+  try{validateDay(candidate);}catch(err){alert(err.message);return;}
+  db.days[today()]=candidate;
+  resetExpenseEditor();persist();render();
+  notice((old?'Updated ':'Saved ')+EXPENSE_TYPES[type]+' '+money(amount)+
+    '. Original COD and Rider collections were not changed.');
+});
+updateExpenseTypeUI();
+
 let selectedRiderId = null;
 let selectedRiderDate = null;
 let transactionFeedback=null;
@@ -792,6 +923,7 @@ function render(){
   x('codReconcileNote').textContent=due>0
     ? money(due)+' is still outstanding across '+d.riders.filter(r=>effectiveCOD(d,r.id)-sums(r).paid>0).length+' rider(s).'
     : 'All rider COD amounts are settled or overpaid.';
+  renderExpenses(d,cash,online,total);
   x('agentReconcile').textContent='Agent vs Panel COD: '+(agentVsCOD>0?money(agentVsCOD)+' above COD':agentVsCOD<0?money(-agentVsCOD)+' below COD':'Matched')+
     '. Agent vs actual collections: '+(agentVsCollected>0?money(agentVsCollected)+' paid above collections':agentVsCollected<0?money(-agentVsCollected)+' still held':'Matched')+
     '. Note: rider pending and overpaid entries explain why collected cash differs from Panel COD.';
