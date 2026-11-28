@@ -3,7 +3,7 @@
 <title>COD Collection · AD JOY PANEL</title>
 <link rel="stylesheet" href="../../assets/css/base.css">
 <link rel="stylesheet" href="../../assets/css/panel-theme.css">
-<link rel="stylesheet" href="cod-collection.css?v=20261128-cod-expense-reconcile-1">
+<link rel="stylesheet" href="cod-collection.css?v=20261128-online-transaction-details-1">
 </head><body class="cod-locked"><main class="page-content">
 <header class="page-head cod-page-header"><div><h1 class="page-title">COD Collection</h1>
 <p class="page-sub">Rider collection and payment-agent settlement · Firebase-synced daily ledger</p></div>
@@ -14,10 +14,33 @@
     <div class="card cod-stat cod-stat-total"><small>Total COD</small><strong id="codTotal">৳0.00</strong></div>
     <div class="card cod-stat cod-stat-collected"><small>Total Collected</small><strong id="codCollected">৳0.00</strong></div>
     <div class="card cod-stat cod-stat-cash"><small>Cash Collected</small><strong id="codCash">৳0.00</strong></div>
-    <div class="card cod-stat cod-stat-online"><small>Online Payment</small><strong id="codOnline">৳0.00</strong></div>
+    <div class="card cod-stat cod-stat-online">
+      <button type="button" id="codOnlineDetailsToggle" class="cod-online-summary-button" aria-controls="codOnlineDetails" aria-expanded="false" title="View rider online transactions for selected work date">
+        <small>Online Payment <span class="cod-online-view-hint">View Details <span aria-hidden="true">↗</span></span></small>
+        <strong id="codOnline">৳0.00</strong>
+      </button>
+    </div>
     <div class="card cod-stat cod-stat-due"><small>Rider Due</small><strong id="codDue">৳0.00</strong></div>
     <div class="card cod-stat cod-stat-over"><small>Overpaid by Riders</small><strong id="codOver">৳0.00</strong></div>
   </div>
+  <section id="codOnlineDetails" class="card cod-online-details" aria-labelledby="codOnlineDetailsTitle" hidden>
+    <div class="cod-online-details-header">
+      <div><h3 id="codOnlineDetailsTitle">Online Transaction Details</h3>
+        <p>Rider payments other than Cash · Work Date: <span id="codOnlineDetailsDate"></span></p>
+      </div>
+      <button type="button" id="codOnlineDetailsClose" class="btn btn-light">Close</button>
+    </div>
+    <div class="cod-online-details-summary" aria-live="polite">
+      <span id="codOnlineDetailsCount">0 transactions</span>
+      <strong id="codOnlineDetailsTotal">৳0.00</strong>
+    </div>
+    <div class="cod-table-scroll">
+      <table class="cod-table cod-online-details-table">
+        <thead><tr><th>Rider</th><th>Payment Method</th><th>Amount</th><th>Transaction / Reference</th></tr></thead>
+        <tbody id="codOnlineDetailsRows"></tbody>
+      </table>
+    </div>
+  </section>
   <div class="cod-reconcile-note" id="codReconcileNote"></div>
 </section>
 <nav class="cod-tab-nav" role="tablist" aria-label="COD workspace">
@@ -200,7 +223,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="cod-collection.js?v=20261128-cod-expense-reconcile-1"></script><script>
+<script src="cod-collection.js?v=20261128-online-transaction-details-1"></script><script>
 (() => {
   const form = document.getElementById('agentForm');
   const method = document.getElementById('agentMethod');
